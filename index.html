@@ -64,6 +64,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0;-webkit-appearance:none;appearance:none}
 select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 55%,calc(100% - 11px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:28px}
 textarea{resize:vertical}
+input[type=checkbox],input[type=radio]{-webkit-appearance:auto;appearance:auto;width:22px;height:22px;padding:0;flex:none;accent-color:var(--shu);background:none;border:0}
+input[type=range]{-webkit-appearance:auto;appearance:auto;padding:0;border:0;background:none;accent-color:var(--shu)}
+.lp{position:absolute;top:12px;right:calc(max(12px,env(safe-area-inset-right,0px)) + 58px);width:min(250px,calc(100% - 92px));background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.25);padding:8px;display:flex;flex-direction:column;gap:0;z-index:6;max-height:calc(100% - 24px);overflow-y:auto}
+.lp h3{margin:4px 6px 4px;font-size:.76rem;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.lp label{display:flex;align-items:center;gap:10px;min-height:42px;padding:0 6px;border-radius:8px;font-size:.95rem;color:var(--ink)}
+.lp label.dis{opacity:.45}
+.lp hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+.lp .op{display:flex;align-items:center;gap:8px;padding:0 6px 4px;font-size:.8rem;color:var(--muted)}
+.lp .op input{flex:1}
+.attrib{position:absolute;left:max(8px,env(safe-area-inset-left,0px));bottom:6px;max-width:calc(100% - 16px);font-size:.7rem;line-height:1.3;background:rgba(255,255,255,.9);color:#222;padding:3px 7px;border-radius:5px}
+.attrib a{color:#1f4f99}
+.tilemsg{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:min(320px,calc(100% - 40px));background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:.85rem;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.2)}
+.float button.txt{font-size:.78rem;font-weight:700}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px;font-size:.9rem}
+.ver{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);margin:0}
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;background:var(--panel);border-radius:16px 16px 0 0;max-height:90%;display:flex;flex-direction:column;box-shadow:0 -2px 12px rgba(0,0,0,.2)}
 @media (min-width:820px){.sheet{left:auto;right:max(16px,env(safe-area-inset-right,0px));bottom:16px;width:450px;border-radius:16px;max-height:calc(100% - 32px)}}
@@ -130,16 +145,21 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--m
       <div>
         <h2>はじめに</h2>
         <ol>
-          <li>「設定」で調査地点を作り、その地点の図面PDFを開きます</li>
-          <li>図面の基準点で位置合わせをします</li>
+          <li>「設定」で調査地点を作ります。図面PDFがあれば開きます（なくても地理院地図で記録できます）</li>
+          <li>図面を使うときは、図面の基準点で位置合わせをします</li>
           <li>現地で「この場所で記録」を押し、区分（墓・石垣・曲輪・入口など）を選んで写真を撮ります</li>
           <li>作業の終わりに「出力」から写真と作業ファイルを書き出します</li>
         </ol>
         <button type="button" class="pri" id="helloSet">設定を開く</button>
+        <p class="ver">調査地点台帳 v<span class="verNo"></span></p>
       </div>
     </div>
     <div class="banner" id="banner" hidden><span id="bannerText"></span><button type="button" id="bannerCancel">中止</button></div>
+    <div class="attrib" id="attrib" hidden></div>
+    <div class="tilemsg" id="tileMsg" hidden></div>
+    <div class="lp" id="layerPanel" hidden></div>
     <div class="float">
+      <button type="button" id="bLayer" class="txt" aria-label="表示する地図を選ぶ" title="地図の切り替え" aria-expanded="false">地図</button>
       <button type="button" id="bLocate" aria-label="現在地へ移動" title="現在地へ移動">◎</button>
       <button type="button" id="bFit" aria-label="図面全体を表示" title="図面全体">⤢</button>
     </div>
@@ -214,6 +234,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--m
     <p class="hint" id="outSite"></p>
     <div class="grp"><h3>成果品</h3>
       <button type="button" class="pri" id="oPdf">PDF（位置図＋台帳）</button>
+      <label class="chk"><input type="checkbox" id="oGsi"> 地理院地図の位置図ページを加える</label>
       <div class="btns"><button type="button" id="oCsv">台帳CSV</button><button type="button" id="oPhotos">写真一式（ZIP）</button></div>
       <p class="hint">アプリ内で撮影した写真は、iPhoneの「写真」アプリには残りません。作業の終わりに「写真一式」を書き出してください。</p>
     </div>
@@ -238,10 +259,11 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--m
       <label class="f">所在地<input id="sAddr" autocomplete="off" placeholder="例：〇〇村字〇〇"></label>
       <label class="f">調査者<input id="sWho" autocomplete="off"></label>
     </div>
-    <div class="grp"><h3>図面（この調査地点）</h3>
+    <div class="grp"><h3>図面（この調査地点・なくても記録できます）</h3>
       <span class="file"><button type="button">図面を開く（PDF・画像）</button><input id="mapIn" type="file" accept="application/pdf,image/png,image/jpeg" aria-label="図面を開く"></span>
       <label class="f" id="pageRow" hidden>ページ<select id="pageSel"></select></label>
       <p class="hint" id="mapInfo">未読込</p>
+      <p class="hint">表示する地図（図面／地理院地図）は、地図画面の右上の「地図」ボタンで切り替えます。</p>
     </div>
     <div class="grp"><h3>位置合わせ</h3>
       <label class="f">座標系（平面直角座標系）<select id="zone"></select></label>
@@ -272,6 +294,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--m
       <span class="file"><button type="button">作業ファイルを開く（ZIP）</button><input id="projIn" type="file" accept=".zip,application/zip" aria-label="作業ファイルを開く"></span>
       <p class="hint" id="storeInfo"></p>
     </div>
+    <p class="ver">調査地点台帳 v<span class="verNo"></span>　地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院 地理院タイル</a></p>
   </div>
 </section>
 
@@ -288,6 +311,14 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function toast(m,ms=3000){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,ms)}
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+const APP_VERSION="1.1（2026-11-08）";
+document.querySelectorAll(".verNo").forEach(e=>e.textContent=APP_VERSION);
+/* ===== 地理院タイル ===== */
+const GSI={std:{name:"標準地図",ext:"png",min:5,max:18},pale:{name:"淡色地図",ext:"png",min:5,max:18},seamlessphoto:{name:"写真",ext:"jpg",min:2,max:18},hillshademap:{name:"陰影起伏図",ext:"png",min:2,max:16}};
+const gsiUrl=(l,z,x,y)=>`https://cyberjapandata.gsi.go.jp/xyz/${l}/${z}/${x}/${y}.${GSI[l].ext}`;
+const merc=(lat,lon)=>{const s=Math.sin(lat*Math.PI/180);return {x:(lon+180)/360*256,y:(0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*256}};
+const unmerc=(x,y)=>{const n=Math.PI-2*Math.PI*y/256;return {lat:180/Math.PI*Math.atan(Math.sinh(n)),lon:x/256*360-180}};
+const MPP0=156543.03392;/* 赤道でのズーム0の1ピクセルあたりm */
 const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 
 /* ===== 区分（構造物の種類）と色 ===== */
@@ -337,6 +368,8 @@ const live={fix:null,watch:null,simFix:null,err:null};
 const catColor=n=>(APP.cats.find(c=>c.name===n)||{}).color||"#666666";
 const catOrder=n=>{const i=APP.cats.findIndex(c=>c.name===n);return i<0?99:i};
 const recLabel=r=>`${r.cat||""}${r.no}`;
+function curLayer(){if(!S)return "std";let l=S.layer||(S.map?"pdf":"std");if(l==="pdf"&&!S.map)l="std";if(l!=="pdf"&&!GSI[l])l="std";return l}
+const isGsi=()=>curLayer()!=="pdf";
 
 /* ===== 端末内の自動保存（IndexedDB） ===== */
 const DB={db:null,async open(){if(this.db)return this.db;this.db=await new Promise((res,rej)=>{const r=indexedDB.open("chosa-chiten",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});return this.db},
@@ -367,7 +400,7 @@ const llToUV=(lat,lon)=>{if(!G)return null;const p=GK.fwd(lat,lon,S.zone);return
 const uvToLL=(u,v)=>{const p=toXY(u,v);return p?GK.inv(p.X,p.Y,S.zone):null};
 function recompute(){solveGeo();
   if(S)for(const r of S.recs){r.X=r.Y=null;r.u=r.v=null;
-    if(has(r.lat)){const p=GK.fwd(r.lat,r.lon,S.zone);r.X=p.X;r.Y=p.Y;const q=toUV(p.X,p.Y);if(q){r.u=q.u;r.v=q.v}}
+    if(has(r.lat)){const p=GK.fwd(r.lat,r.lon,S.zone);r.X=p.X;r.Y=p.Y;const q=toUV(p.X,p.Y);if(q){r.u=q.u;r.v=q.v}const m=merc(r.lat,r.lon);r.mx=m.x;r.my=m.y}else{r.mx=r.my=null}
     r.out=!!(S.map&&has(r.u)&&(r.u<0||r.v<0||r.u>S.map.wU||r.v>S.map.hU))}
   renderGeo();renderList();draw();$("cnt").textContent=S?S.recs.length:0}
 
@@ -377,7 +410,7 @@ async function waitPdfjs(){for(let i=0;i<100&&!window.pdfjsLib;i++)await new Pro
 function blobImage(blob){return new Promise((res,rej)=>{const u=URL.createObjectURL(blob),i=new Image();i.onload=()=>{res(i);setTimeout(()=>URL.revokeObjectURL(u),1000)};i.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("画像を開けません"))};i.src=u})}
 let mapToken=0;
 async function openMap(){const tok=++mapToken;base=null;pdfDoc=null;const m=S&&S.map;$("pageRow").hidden=true;
-  if(!m){$("mapInfo").textContent="未読込";$("hello").hidden=!!(S&&S.recs.length);updateLabel();recompute();return}
+  if(!m){$("mapInfo").textContent="未読込";$("hello").hidden=!!S;updateLabel();applyLayer();recompute();return}
   $("mapInfo").textContent="読込中…";
   try{if(m.kind==="pdf"){const lib=await waitPdfjs(),data=new Uint8Array(await m.blob.arrayBuffer());const doc=await lib.getDocument({data}).promise;if(tok!==mapToken)return;pdfDoc=doc;
       m.page=Math.min(m.page||1,doc.numPages);const pg=await doc.getPage(m.page),vp1=pg.getViewport({scale:1});m.wU=vp1.width;m.hU=vp1.height;
@@ -389,19 +422,30 @@ async function openMap(){const tok=++mapToken;base=null;pdfDoc=null;const m=S&&S
     else{const img=await blobImage(m.blob);if(tok!==mapToken)return;m.wU=img.naturalWidth;m.hU=img.naturalHeight;const R=Math.min(1,Math.sqrt((IOS?6e6:8e6)/(m.wU*m.hU)));
       const cvb=document.createElement("canvas");cvb.width=Math.round(m.wU*R);cvb.height=Math.round(m.hU*R);cvb.getContext("2d").drawImage(img,0,0,cvb.width,cvb.height);base=cvb}
     $("mapInfo").textContent=m.kind==="pdf"?`${m.name}　${(m.wU/72*25.4).toFixed(0)}×${(m.hU/72*25.4).toFixed(0)} mm`:`${m.name}　${m.wU}×${m.hU} px（画像は基準点2点以上で位置合わせ）`;
-    $("mpu").value=has(S.mpu)?S.mpu.toFixed(6):"";$("hello").hidden=true;fit();
+    $("mpu").value=has(S.mpu)?S.mpu.toFixed(6):"";$("hello").hidden=true;fitPdf();
   }catch(e){console.error(e);$("mapInfo").textContent="読み込めませんでした："+e.message;toast("図面を開けませんでした："+e.message,5000)}
-  updateLabel();recompute()}
-function updateLabel(){$("siteLabel").textContent=S?(S.name||"（名称未入力）")+(S.map?"":"　図面なし"):"調査地点 未作成"}
+  $("hello").hidden=!!S;updateLabel();applyLayer();recompute()}
+function updateLabel(){$("siteLabel").textContent=S?(S.name||"（名称未入力）")+(isGsi()?"　地理院 "+GSI[curLayer()].name:""):"調査地点 未作成"}
 
 /* ===== ビューア ===== */
-const cv=$("view");let V={s:1,ox:0,oy:0},follow=false;
+const cv=$("view");const Vp={s:1,ox:0,oy:0},Vg={s:1,ox:0,oy:0,init:false};let V=Vp,follow=false;
 function resize(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,3);cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);draw()}
-function fit(){if(!S||!S.map||!S.map.wU)return;const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;V.s=Math.min(w/S.map.wU,h/S.map.hU)*.96;V.ox=(w-S.map.wU*V.s)/2;V.oy=(h-S.map.hU*V.s)/2;follow=false;draw()}
+function fitPdf(){if(!S||!S.map||!S.map.wU)return;const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;Vp.s=Math.min(w/S.map.wU,h/S.map.hU)*.96;Vp.ox=(w-S.map.wU*Vp.s)/2;Vp.oy=(h-S.map.hU*Vp.s)/2;follow=false;draw()}
+function centerG(lat,lon,s){const m=merc(lat,lon);Vg.s=s;Vg.ox=cv.clientWidth/2-m.x*s;Vg.oy=cv.clientHeight/2-m.y*s}
+function fitGsi(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h||!S)return;let pts=S.recs.filter(r=>has(r.lat)).map(r=>merc(r.lat,r.lon));
+  if(!pts.length&&G&&S.map&&S.map.wU)pts=[[0,0],[S.map.wU,0],[0,S.map.hU],[S.map.wU,S.map.hU]].map(([u,v])=>{const ll=uvToLL(u,v);return merc(ll.lat,ll.lon)});
+  if(pts.length){const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+    const s=Math.min(2**17,Math.max(2**8,Math.min(w*.8/Math.max(x1-x0,1e-9),h*.8/Math.max(y1-y0,1e-9))));Vg.s=s;Vg.ox=w/2-(x0+x1)/2*s;Vg.oy=h/2-(y0+y1)/2*s}
+  else{const f=curFix();if(f)centerG(f.lat,f.lon,2**16);else centerG(26.40,127.85,2**9)}
+  Vg.init=true;follow=false;draw()}
+function fit(){if(isGsi())fitGsi();else fitPdf()}
+function applyLayer(){V=isGsi()?Vg:Vp;if(isGsi()&&!Vg.init)fitGsi();updateAttrib();updateLabel();renderLayerPanel();draw()}
+function setLayer(l){if(!S)return;S.layer=l;applyLayer();persist()}
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const curFix=()=>APP.sim?live.simFix:live.fix;
 const FONT=`"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",sans-serif`;
-function draw(){const c=cv.getContext("2d"),d=Math.min(devicePixelRatio||1,3);c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,cv.width,cv.height);if(!S||!S.map||!base)return;
+function draw(){const c=cv.getContext("2d"),d=Math.min(devicePixelRatio||1,3);c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,cv.width,cv.height);if(!S)return;
+  if(isGsi())return drawGsi(c,d);$("tileMsg").hidden=true;if(!S.map||!base)return;
   c.setTransform(d*V.s,0,0,d*V.s,d*V.ox,d*V.oy);c.imageSmoothingQuality="high";c.drawImage(base,0,0,S.map.wU,S.map.hU);c.setTransform(d,0,0,d,0,0);
   const P=(u,v)=>[V.ox+u*V.s,V.oy+v*V.s];
   for(const k of S.cps){const [x,y]=P(k.u,k.v);c.strokeStyle="#1f5fbf";c.lineWidth=2;c.beginPath();c.moveTo(x-10,y);c.lineTo(x+10,y);c.moveTo(x,y-10);c.lineTo(x,y+10);c.stroke();c.beginPath();c.arc(x,y,6,0,7);c.stroke();c.font=`600 13px ${css("--f-mono")}`;c.fillStyle="#1f5fbf";c.textAlign="left";c.fillText(k.k,x+9,y-9)}
@@ -409,15 +453,51 @@ function draw(){const c=cv.getContext("2d"),d=Math.min(devicePixelRatio||1,3);c.
   const f=curFix();if(f&&G){const q=llToUV(f.lat,f.lon);if(q){const [x,y]=P(q.u,q.v),rr=f.acc/Math.hypot(G.ar,G.ai)*V.s;
     c.fillStyle="rgba(31,95,191,.15)";c.strokeStyle="rgba(31,95,191,.6)";c.lineWidth=1;c.beginPath();c.arc(x,y,Math.max(rr,8),0,7);c.fill();c.stroke();
     c.fillStyle="#1f5fbf";c.strokeStyle="#fff";c.lineWidth=3;c.beginPath();c.arc(x,y,7,0,7);c.fill();c.stroke()}}}
+/* ---- 地理院タイルの読込と描画 ---- */
+const tiles=new Map();const tileStat={ok:0,err:0};let rq=false;
+function reqDraw(){if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;draw()})}
+function getTile(L,z,x,y,load){const k=`${L}/${z}/${x}/${y}`;let t=tiles.get(k);if(t){tiles.delete(k);tiles.set(k,t);return t}if(!load)return null;
+  t={img:new Image(),st:0};t.img.crossOrigin="anonymous";t.img.onload=()=>{t.st=1;tileStat.ok++;reqDraw()};t.img.onerror=()=>{t.st=2;tileStat.err++;reqDraw()};t.img.src=gsiUrl(L,z,x,y);
+  tiles.set(k,t);if(tiles.size>900)tiles.delete(tiles.keys().next().value);return t}
+function drawTile(c,L,z,x,y,sx,sy,ts){const t=getTile(L,z,x,y,true);if(t.st===1){c.drawImage(t.img,sx,sy,ts+.6,ts+.6);return}
+  for(let k=1;k<=5&&z-k>=GSI[L].min;k++){const p=getTile(L,z-k,x>>k,y>>k,false);if(p&&p.st===1){const f=2**k,sub=256/f;c.drawImage(p.img,(x%f)*sub,(y%f)*sub,sub,sub,sx,sy,ts+.6,ts+.6);return}}}
+function drawGsi(c,d){c.setTransform(d,0,0,d,0,0);const w=cv.clientWidth,h=cv.clientHeight,L=curLayer(),meta=GSI[L];
+  c.fillStyle="#e8ebe8";c.fillRect(0,0,w,h);
+  const z=Math.round(Math.log2(V.s)),zt=Math.min(meta.max,Math.max(meta.min,z));let msg="";
+  if(z<meta.min-1)msg="拡大すると地理院地図が表示されます";
+  else{const n=2**zt,ts=256/n*V.s,x0=Math.max(0,Math.floor(-V.ox/ts)),x1=Math.min(n-1,Math.floor((w-V.ox)/ts)),y0=Math.max(0,Math.floor(-V.oy/ts)),y1=Math.min(n-1,Math.floor((h-V.oy)/ts));
+    c.imageSmoothingEnabled=true;c.imageSmoothingQuality="high";
+    if((x1-x0+1)*(y1-y0+1)<=160)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)drawTile(c,L,zt,x,y,V.ox+x*ts,V.oy+y*ts,ts)}
+  if(!tileStat.ok&&tileStat.err>=3)msg="地理院地図を読み込めません。電波のある場所で開いてください（Claude上のプレビューでは表示されません）";
+  $("tileMsg").textContent=msg;$("tileMsg").hidden=!msg;
+  if(S.ovl&&S.ovl.on&&S.map&&base&&G){const P=(u,v)=>{const ll=uvToLL(u,v),m=merc(ll.lat,ll.lon);return [V.ox+m.x*V.s,V.oy+m.y*V.s]};
+    const [ax,ay]=P(0,0),[bx,by]=P(S.map.wU,0),[cx2,cy2]=P(0,S.map.hU);
+    c.save();c.globalAlpha=S.ovl.op??.5;c.setTransform(d*(bx-ax)/S.map.wU,d*(by-ay)/S.map.wU,d*(cx2-ax)/S.map.hU,d*(cy2-ay)/S.map.hU,d*ax,d*ay);c.drawImage(base,0,0,S.map.wU,S.map.hU);c.restore();c.setTransform(d,0,0,d,0,0)}
+  for(const r of S.recs){if(!has(r.mx))continue;drawMarker(c,V.ox+r.mx*V.s,V.oy+r.my*V.s,recLabel(r),catColor(r.cat),r.id===editId?1.3:1,15)}
+  const f=curFix();if(f){const m=merc(f.lat,f.lon),x=V.ox+m.x*V.s,y=V.oy+m.y*V.s,rr=f.acc/(MPP0*Math.cos(f.lat*Math.PI/180))*V.s;
+    c.fillStyle="rgba(31,95,191,.15)";c.strokeStyle="rgba(31,95,191,.6)";c.lineWidth=1;c.beginPath();c.arc(x,y,Math.max(rr,8),0,7);c.fill();c.stroke();
+    c.fillStyle="#1f5fbf";c.strokeStyle="#fff";c.lineWidth=3;c.beginPath();c.arc(x,y,7,0,7);c.fill();c.stroke()}}
+function updateAttrib(){const a=$("attrib");if(S&&isGsi()){const L=curLayer();a.innerHTML=`出典：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院（地理院タイル ${GSI[L].name}）</a>`;a.hidden=false}else a.hidden=true}
+function renderLayerPanel(){const p=$("layerPanel");if(p.hidden)return;const L=curLayer(),hasMap=!!(S&&S.map),ov=S&&S.ovl||{on:false,op:.5};
+  p.innerHTML=`<h3>表示する地図</h3><label class="${hasMap?"":"dis"}"><input type="radio" name="lyr" value="pdf" ${L==="pdf"?"checked":""} ${hasMap?"":"disabled"}>図面（PDF）${hasMap?"":"<span class='hint'>未読込</span>"}</label>`+
+  Object.entries(GSI).map(([k,m])=>`<label><input type="radio" name="lyr" value="${k}" ${L===k?"checked":""}>地理院 ${m.name}</label>`).join("")+
+  (hasMap&&L!=="pdf"?`<hr><label class="${G?"":"dis"}"><input type="checkbox" id="ovlOn" ${ov.on&&G?"checked":""} ${G?"":"disabled"}>図面を重ねる</label>${G?`<div class="op">うすく<input type="range" id="ovlOp" min="10" max="100" value="${Math.round((ov.op??.5)*100)}" aria-label="図面の濃さ">こく</div>`:`<p class="hint" style="padding:0 6px">位置合わせ後に重ねられます</p>`}`:"")+
+  `<hr><p class="hint" style="padding:0 6px 4px">地理院地図は電波が必要です。圏外では図面（PDF）を使ってください。</p>`}
+$("bLayer").onclick=()=>{const p=$("layerPanel");p.hidden=!p.hidden;$("bLayer").setAttribute("aria-expanded",String(!p.hidden));$("bLayer").classList.toggle("on",!p.hidden);renderLayerPanel()};
+$("layerPanel").addEventListener("change",e=>{const t=e.target;if(t.name==="lyr"){setLayer(t.value);if(t.value==="pdf")fitPdf()}
+  if(t.id==="ovlOn"){S.ovl={...(S.ovl||{op:.5}),on:t.checked};draw();persist();renderLayerPanel()}
+  if(t.id==="ovlOp")persist()});
+$("layerPanel").addEventListener("input",e=>{if(e.target.id==="ovlOp"){S.ovl={...(S.ovl||{on:true}),op:+e.target.value/100};draw()}});
+function hideLayerPanel(){if(!$("layerPanel").hidden){$("layerPanel").hidden=true;$("bLayer").classList.remove("on");$("bLayer").setAttribute("aria-expanded","false")}}
 function drawMarker(c,x,y,label,col,k,fs){const R=6*k*fs/13;c.lineWidth=2*fs/13;c.strokeStyle="#fff";c.fillStyle=col;c.beginPath();c.arc(x,y,R,0,7);c.fill();c.stroke();
   c.fillStyle="#fff";c.beginPath();c.arc(x,y,R*.35,0,7);c.fill();
   c.font=`700 ${fs*k}px ${FONT}`;c.textAlign="left";c.textBaseline="middle";
   const w=c.measureText(label).width,px=x+R+3*fs/13,py=y-R-fs*.6*k;c.fillStyle="rgba(255,255,255,.93)";c.fillRect(px-2*fs/13,py-fs*.65*k,w+4*fs/13,fs*1.3*k);
   c.strokeStyle=col;c.lineWidth=fs/13;c.strokeRect(px-2*fs/13,py-fs*.65*k,w+4*fs/13,fs*1.3*k);c.fillStyle=col;c.fillText(label,px,py);c.textBaseline="alphabetic"}
 const s2u=(x,y)=>({u:(x-V.ox)/V.s,v:(y-V.oy)/V.s});
-function zoomAt(f,x,y){const ns=Math.max(.05,Math.min(60,V.s*f));V.ox=x-(x-V.ox)*ns/V.s;V.oy=y-(y-V.oy)*ns/V.s;V.s=ns;draw()}
+function zoomAt(f,x,y){const [lo,hi]=isGsi()?[2**4,2**21]:[.05,60];const ns=Math.max(lo,Math.min(hi,V.s*f));V.ox=x-(x-V.ox)*ns/V.s;V.oy=y-(y-V.oy)*ns/V.s;V.s=ns;draw()}
 const ptrs=new Map();let drag=null,pinch=null,moved=0;
-cv.addEventListener("pointerdown",e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});moved=0;if(ptrs.size===1)drag=true;if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),s:V.s};drag=null}});
+cv.addEventListener("pointerdown",e=>{hideLayerPanel();cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});moved=0;if(ptrs.size===1)drag=true;if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),s:V.s};drag=null}});
 cv.addEventListener("pointermove",e=>{const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.offsetX-p.x,dy=e.offsetY-p.y;p.x=e.offsetX;p.y=e.offsetY;moved+=Math.abs(dx)+Math.abs(dy);
   if(pinch&&ptrs.size===2){const [a,b]=[...ptrs.values()];zoomAt(pinch.s*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d/V.s,(a.x+b.x)/2,(a.y+b.y)/2);moved+=99;follow=false}
   else if(drag){V.ox+=dx;V.oy+=dy;if(moved>8)follow=false;draw()}});
@@ -426,13 +506,21 @@ cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
 cv.addEventListener("wheel",e=>{e.preventDefault();zoomAt(Math.exp(-e.deltaY*.0015),e.offsetX,e.offsetY)},{passive:false});
 document.addEventListener("gesturestart",e=>e.preventDefault());
 $("bFit").onclick=fit;
-$("bLocate").onclick=()=>{const f=curFix();if(!f)return toast(APP.sim?"模擬GPS：図面をタップして現在地を指定してください":"GPSの測位を待っています");
-  if(!G)return toast("位置合わせが済んでいないため、図上に表示できません");const q=llToUV(f.lat,f.lon);V.s=Math.max(V.s,2.5);V.ox=cv.clientWidth/2-q.u*V.s;V.oy=cv.clientHeight/2-q.v*V.s;follow=true;draw()};
+$("bLocate").onclick=()=>{const f=curFix();if(!f)return toast(APP.sim?"模擬GPS：地図をタップして現在地を指定してください":"GPSの測位を待っています");
+  if(isGsi()){centerG(f.lat,f.lon,Math.max(V.s,2**17));follow=true;draw();return}
+  if(!G)return toast("位置合わせが済んでいないため、図面上に表示できません。「地図」で地理院地図に切り替えると表示できます",4500);const q=llToUV(f.lat,f.lon);V.s=Math.max(V.s,2.5);V.ox=cv.clientWidth/2-q.u*V.s;V.oy=cv.clientHeight/2-q.v*V.s;follow=true;draw()};
 
 let uiMode=null;
 function setMode(m,text){uiMode=m;$("banner").hidden=!m;$("bannerText").textContent=text||""}
 $("bannerCancel").onclick=()=>{const m=uiMode;setMode(null);if(m==="placeRec")openSheet("shRec");if(m==="cp")openSheet("shSet")};
-function tap(x,y){if(!S||!S.map)return;const q=s2u(x,y);
+function tap(x,y){if(!S)return;
+  if(isGsi()){const ll=unmerc((x-V.ox)/V.s,(y-V.oy)/V.s);
+    if(uiMode==="placeRec"){draft.pos={lat:ll.lat,lon:ll.lon,acc:null,src:"手動",n:0};setMode(null);openSheet("shRec");renderPos();return}
+    if(uiMode)return;
+    let best=null,bd=24;for(const r of S.recs){if(!has(r.mx))continue;const dd=Math.hypot(V.ox+r.mx*V.s-x,V.oy+r.my*V.s-y);if(dd<bd){bd=dd;best=r}}
+    if(best)return openRec(best.id);
+    if(APP.sim){live.simFix={lat:ll.lat,lon:ll.lon,acc:4,t:Date.now()};onFix()}return}
+  if(!S.map)return;const q=s2u(x,y);
   if(uiMode==="cp"){const k="P"+(S.cps.reduce((m,c)=>Math.max(m,+c.k.slice(1)),0)+1);S.cps.push({k,u:q.u,v:q.v,X:null,Y:null});setMode(null);$("cpList").dataset.sig="-";recompute();persist();openSheet("shSet");
     setTimeout(()=>{const i=$("cpList").querySelector(`input[data-k="${k}"]`);if(i){i.scrollIntoView({block:"center"});i.focus()}},200);return}
   if(uiMode==="placeRec"){const ll=uvToLL(q.u,q.v);if(!ll){toast("位置合わせ後に指定できます");return}draft.pos={lat:ll.lat,lon:ll.lon,acc:null,src:"手動",n:0};setMode(null);openSheet("shRec");renderPos();return}
@@ -448,7 +536,7 @@ function gpsChip(){const el=$("gpsChip"),f=curFix();
   if(APP.sim){el.className="gps s";el.textContent=f?"模擬GPS":"模擬GPS 未指定";return}
   if(!f){el.className="gps r";el.textContent=live.err?"GPS 不可":"GPS 測位中…";el.title=live.err||"";return}
   const age=(Date.now()-f.t)/1000;el.className="gps "+(age>30?"r":f.acc<=5?"g":f.acc<=15?"a":"r");el.textContent=`GPS ±${Math.round(f.acc)}m${age>30?" 古い":""}`}
-function onFix(){gpsChip();if(follow&&G){const f=curFix(),q=llToUV(f.lat,f.lon);if(q){V.ox=cv.clientWidth/2-q.u*V.s;V.oy=cv.clientHeight/2-q.v*V.s}}draw();if(measuring&&curFix())measuring.push({...curFix()})}
+function onFix(){gpsChip();const f=curFix();if(follow&&f){if(isGsi())centerG(f.lat,f.lon,V.s);else if(G){const q=llToUV(f.lat,f.lon);if(q){V.ox=cv.clientWidth/2-q.u*V.s;V.oy=cv.clientHeight/2-q.v*V.s}}}draw();if(measuring&&curFix())measuring.push({...curFix()})}
 setInterval(gpsChip,5000);
 let measuring=null,measureT=null;
 function measure(){if(!curFix()&&live.err&&!APP.sim){draft.pos=null;renderPos(live.err+"。図上で指定するか、PCでの試験は「設定」の模擬GPSを使ってください");return}
@@ -497,11 +585,11 @@ function renderPos(msg){const p=draft&&draft.pos,b=$("posBox");let h="";
     h=`<div><span class="chip ${cls}">${esc(p.src)}${has(p.acc)?` ±${Math.round(p.acc)}m`:""}</span>${p.n?` <span class="hint">${p.n}回測位の最良値</span>`:""}</div>
       <div class="big">X ${xy.X.toFixed(1)}　Y ${xy.Y.toFixed(1)}（第${ROMAN[S.zone]}系）<br>${p.lat.toFixed(6)}N　${p.lon.toFixed(6)}E</div>`;
     if(p.src!=="手動"&&has(p.acc)&&p.acc>15)h+=`<p class="hint" style="color:var(--bad)">誤差が大きいため、空の見える場所で再測位するか、図上で指定してください</p>`;
-    if(!G)h+=`<p class="hint">位置合わせ前のため、図上には表示されません（座標は記録されます）</p>`}
+    if(!G&&!isGsi())h+=`<p class="hint">図面の位置合わせ前のため、図面上には表示されません（座標は記録され、地理院地図には表示されます）</p>`}
   else h=`<div><span class="chip c-warn">位置なし</span> 位置が記録されていません</div>`;
   h+=`<div class="btns"><button type="button" id="reMeasure">${p?"再測位":"測位する"}</button><button type="button" id="placeOnMap">図上で指定</button></div>`;b.innerHTML=h}
 $("posBox").addEventListener("click",e=>{if(e.target.id==="reMeasure")measure();
-  if(e.target.id==="placeOnMap"){if(!G)return toast("位置合わせ後に図上で指定できます");clearTimeout(measureT);measuring=null;readForm();closeSheets(true);setMode("placeRec",`${draft.cat}${draft.no}の位置をタップ`)}});
+  if(e.target.id==="placeOnMap"){if(!G&&!isGsi())return toast("図面の位置合わせ後に指定できます。「地図」で地理院地図に切り替えれば、位置合わせなしで指定できます",5000);clearTimeout(measureT);measuring=null;readForm();closeSheets(true);setMode("placeRec",`${draft.cat}${draft.no}の位置をタップ`)}});
 function photoName(r,i){const head=(r.photoNo||"").trim()||`${r.cat}${String(r.no).padStart(2,"0")}`;return `${head}_${i+1}`}
 function renderPhotos(){$("recPhotos").innerHTML=draft.photos.map((p,i)=>`<figure><img src="${p.thumb}" alt="写真${i+1}"><figcaption>${esc(photoName(draft,i))}</figcaption><button type="button" class="x" data-rm="${i}" aria-label="写真${i+1}を外す">✕</button></figure>`).join("")}
 $("recPhotos").addEventListener("click",e=>{const i=e.target.dataset.rm;if(i===undefined)return;draft.photos.splice(+i,1);renderPhotos()});
@@ -539,7 +627,7 @@ $("listCats").addEventListener("click",e=>{const b=e.target.closest("button");if
 
 /* ===== シート ===== */
 const SHEETS=["shRec","shList","shOut","shSet"];
-function openSheet(id){SHEETS.forEach(s=>$(s).hidden=s!==id);$("scrim").hidden=false;if(id==="shSet")renderSettings();if(id==="shOut"){$("readyBox").hidden=true;$("outSite").textContent=S?`対象：${S.name||"（名称未入力）"}（${S.recs.length}件）`:"調査地点がありません"}}
+function openSheet(id){hideLayerPanel();SHEETS.forEach(s=>$(s).hidden=s!==id);if(id==="shOut")$("oGsi").checked=!!S&&(isGsi()||!S.map);$("scrim").hidden=false;if(id==="shSet")renderSettings();if(id==="shOut"){$("readyBox").hidden=true;$("outSite").textContent=S?`対象：${S.name||"（名称未入力）"}（${S.recs.length}件）`:"調査地点がありません"}}
 function closeSheets(keepDraft){SHEETS.forEach(s=>$(s).hidden=true);$("scrim").hidden=true;if(!keepDraft){clearTimeout(measureT);measuring=null;if(!uiMode)editId=null;draw()}}
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>closeSheets());$("scrim").onclick=()=>closeSheets();
 $("dRec").onclick=openNew;$("dList").onclick=()=>{renderList();openSheet("shList")};$("dOut").onclick=()=>openSheet("shOut");$("dSet").onclick=()=>openSheet("shSet");$("helloSet").onclick=()=>openSheet("shSet");
@@ -564,7 +652,7 @@ function renderGeo(){$("mOne").classList.toggle("on",!!S&&S.geoMode==="one");$("
   const st=$("geoStatus");st.textContent=geoMsg;st.className="status "+(G?"ok":"warn")}
 $("cpList").addEventListener("change",e=>{const i=e.target;if(!i.dataset.k)return;const c=S.cps.find(c=>c.k===i.dataset.k),v=parseFloat(i.value.replace(/[^\d.\-]/g,""));c[i.dataset.f]=isFinite(v)?v:null;recompute();persist()});
 $("cpList").addEventListener("click",e=>{const k=e.target.dataset.del;if(!k)return;S.cps=S.cps.filter(c=>c.k!==k);recompute();persist()});
-$("addCp").onclick=()=>{if(!S||!S.map)return toast("先に図面を開いてください");closeSheets();setMode("cp","基準点の位置をタップ")};
+$("addCp").onclick=()=>{if(!S||!S.map)return toast("先に図面を開いてください");closeSheets();if(isGsi()){setLayer("pdf");fitPdf()}setMode("cp","基準点の位置をタップ")};
 $("mOne").onclick=()=>{S.geoMode="one";recompute();persist()};$("mHel").onclick=()=>{S.geoMode="helmert";recompute();persist()};
 $("zone").onchange=e=>{S.zone=+e.target.value;recompute();persist()};
 $("denom").onchange=e=>{S.denom=+e.target.value||1000;if(S.map&&S.map.kind==="pdf"){S.mpu=S.denom*0.0254/72;$("mpu").value=S.mpu.toFixed(6)}recompute();persist()};
@@ -575,7 +663,7 @@ $("wakeBtn").onclick=()=>{APP.wake=!APP.wake;if(!APP.wake&&wakeLock){wakeLock.re
 ZONES.forEach(z=>$("zone").add(new Option(`第${ROMAN[z[0]]}系（原点 ${z[1]}°N, ${z[2].toFixed(4).replace(/\.?0+$/,"")}°E）`,z[0])));$("zone").value=15;
 [["sName","name"],["sAddr","addr"],["sWho","who"]].forEach(([id,k])=>$(id).addEventListener("input",e=>{if(!S)return;S[k]=e.target.value;updateLabel();persist()}));
 $("sName").addEventListener("change",()=>renderSettings());
-async function switchSite(id){S=APP.sites.find(s=>s.id===id)||null;APP.cur=S?S.id:null;listFilter="";G=null;$("cpList").dataset.sig="-";await openMap();persist()}
+async function switchSite(id){S=APP.sites.find(s=>s.id===id)||null;APP.cur=S?S.id:null;listFilter="";G=null;$("cpList").dataset.sig="-";Vp.s=1;Vp.ox=Vp.oy=0;Vg.init=false;await openMap();persist()}
 $("siteSel").onchange=async e=>{await switchSite(e.target.value);renderSettings();toast(`「${S?S.name||"（名称未入力）":""}」に切り替えました`)};
 $("siteNew").onclick=async()=>{const s=newSite("");APP.sites.push(s);await switchSite(s.id);renderSettings();$("sName").focus();toast("調査地点を作成しました。名称を入力し、図面を開いてください",4000)};
 let siteDelArm=false;
@@ -583,7 +671,7 @@ $("siteDel").onclick=async()=>{if(!S)return;if(!siteDelArm){siteDelArm=true;$("s
   siteDelArm=false;$("siteDel").textContent="この地点を削除";const nm=S.name;APP.sites=APP.sites.filter(s=>s!==S);await switchSite(APP.sites[0]?APP.sites[0].id:null);renderSettings();toast(`「${nm||"（名称未入力）"}」を削除しました`)};
 $("mapIn").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f||!S)return;const isPdf=/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name);
   S.map={kind:isPdf?"pdf":"img",name:f.name,mime:f.type||(isPdf?"application/pdf":"image/jpeg"),blob:new Blob([await f.arrayBuffer()],{type:f.type||(isPdf?"application/pdf":"image/jpeg")}),page:1};
-  S.cps=[];S.mpu=null;$("cpList").dataset.sig="-";if(!S.name)S.name=f.name.replace(/\.[^.]+$/,"");await openMap();renderSettings();persist()};
+  S.cps=[];S.mpu=null;S.layer="pdf";Vp.s=1;Vp.ox=Vp.oy=0;$("cpList").dataset.sig="-";if(!S.name)S.name=f.name.replace(/\.[^.]+$/,"");await openMap();renderSettings();persist()};
 $("pageSel").onchange=async e=>{S.map.page=+e.target.value;S.cps=[];$("cpList").dataset.sig="-";await openMap();persist()};
 
 /* ===== ZIP（無圧縮）書出し・読込 ===== */
@@ -617,7 +705,7 @@ const safe=s=>String(s).replace(/[\\/:*?"<>|]/g,"_");
 const stem=s=>`${safe(S&&S.name||"調査地点")}_調査地点台帳${s||""}_${today().replace(/-/g,"")}`;
 
 $("oProj").onclick=async()=>{if(!S)return toast("調査地点がありません");const files=[];
-  const meta={app:"chosa-chiten",v:2,saved:new Date().toISOString(),cats:APP.cats,
+  const meta={app:"chosa-chiten",v:2,appVersion:APP_VERSION,saved:new Date().toISOString(),cats:APP.cats,
     site:{...S,map:S.map?{kind:S.map.kind,name:S.map.name,mime:S.map.mime,page:S.map.page,file:"map/"+safe(S.map.name)}:null,
       recs:S.recs.map(r=>({...r,u:undefined,v:undefined,X:undefined,Y:undefined,out:undefined,photos:r.photos.map(p=>({...p,blob:undefined,file:`photos/${p.id}.jpg`}))}))}};
   files.push({name:"project.json",data:new TextEncoder().encode(JSON.stringify(meta,null,1))});
@@ -685,13 +773,46 @@ async function pagesLedger(){const D=(IOS?160:200)/25.4,W=420,H=297,mg=12,pw=Mat
         cx+=w}}
     x.font=`2.6px ${FONT}`;x.fillStyle="#666";x.fillText("本台帳は暫定版です。座標・区分・種別・時代は現地確認および図面照合のうえ確定してください。",mg,H-mg+1);
     out.push({w:W*MM,h:H*MM,pw,ph,jpg:jpg(c,.88)})}return out}
+async function pageGsi(L){const recs=sorted().filter(r=>has(r.lat));if(!recs.length)return null;const meta=GSI[L];
+  const CW=2480,CH=1754,PX=CW/420,fx=12*PX,fy=24*PX,fw=CW-24*PX,fh=CH-fy-16*PX;
+  const ms=recs.map(r=>merc(r.lat,r.lon)),xs=ms.map(m=>m.x),ys=ms.map(m=>m.y),mx0=Math.min(...xs),mx1=Math.max(...xs),my0=Math.min(...ys),my1=Math.max(...ys);
+  const k=Math.min(2**18,Math.min(fw*.78/Math.max(mx1-mx0,1e-9),fh*.78/Math.max(my1-my0,1e-9))),ox=fx+fw/2-(mx0+mx1)/2*k,oy=fy+fh/2-(my0+my1)/2*k;
+  const zt=Math.min(meta.max,Math.max(meta.min,Math.round(Math.log2(k)))),n=2**zt,ts=256/n*k;
+  const tx0=Math.max(0,Math.floor((fx-ox)/ts)),tx1=Math.min(n-1,Math.floor((fx+fw-ox)/ts)),ty0=Math.max(0,Math.floor((fy-oy)/ts)),ty1=Math.min(n-1,Math.floor((fy+fh-oy)/ts));
+  if((tx1-tx0+1)*(ty1-ty0+1)>300)throw new Error("範囲が広すぎます");
+  const jobs=[];for(let y=ty0;y<=ty1;y++)for(let x=tx0;x<=tx1;x++)jobs.push(new Promise(res=>{const im=new Image();im.crossOrigin="anonymous";const t=setTimeout(()=>res(null),20000);
+    im.onload=()=>{clearTimeout(t);res({im,x,y})};im.onerror=()=>{clearTimeout(t);res(null)};im.src=gsiUrl(L,zt,x,y)}));
+  const got=(await Promise.all(jobs)).filter(Boolean);if(!got.length)throw new Error("地理院地図を読み込めませんでした（通信を確認してください）");
+  const c=document.createElement("canvas");c.width=CW;c.height=CH;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,CW,CH);
+  x.fillStyle="#1c2220";x.font=`700 ${6.2*PX}px ${FONT}`;x.textBaseline="alphabetic";x.fillText(`${S.name||""}　調査地点位置図（地理院地図）`,fx,fy-9*PX);
+  x.font=`${3.2*PX}px ${FONT}`;x.fillStyle="#444";x.fillText(`所在地：${S.addr||""}　　記録 ${recs.length}件　　出力日 ${today()}`,fx,fy-3.5*PX);
+  x.save();x.beginPath();x.rect(fx,fy,fw,fh);x.clip();x.fillStyle="#eef0ee";x.fillRect(fx,fy,fw,fh);x.imageSmoothingQuality="high";
+  for(const g of got)x.drawImage(g.im,ox+g.x*ts,oy+g.y*ts,ts+.6,ts+.6);
+  for(const r of recs){const m=merc(r.lat,r.lon);drawMarker(x,ox+m.x*k,oy+m.y*k,recLabel(r),catColor(r.cat),1,3.2*PX)}
+  const counts={};recs.forEach(r=>counts[r.cat]=(counts[r.cat]||0)+1);const cats=APP.cats.filter(cc=>counts[cc.name]);
+  x.font=`${3.2*PX}px ${FONT}`;const lw=Math.max(...cats.map(cc=>x.measureText(`${cc.name} ${counts[cc.name]}件`).width))+12*PX,lh=(cats.length*5+7)*PX;
+  x.fillStyle="rgba(255,255,255,.92)";x.fillRect(fx+4*PX,fy+4*PX,lw,lh);x.strokeStyle="#888";x.lineWidth=1;x.strokeRect(fx+4*PX,fy+4*PX,lw,lh);
+  x.fillStyle="#1c2220";x.font=`700 ${3.2*PX}px ${FONT}`;x.fillText("凡例",fx+7*PX,fy+9*PX);x.font=`${3.2*PX}px ${FONT}`;
+  cats.forEach((cc,i)=>{const yy=fy+(14+i*5)*PX;x.fillStyle=cc.color;x.beginPath();x.arc(fx+9*PX,yy-1.1*PX,1.4*PX,0,7);x.fill();x.fillStyle="#1c2220";x.fillText(`${cc.name} ${counts[cc.name]}件`,fx+12.5*PX,yy)});
+  const latc=unmerc(0,(fy+fh/2-oy)/k).lat,mpp=MPP0*Math.cos(latc*Math.PI/180)/k,target=mpp*fw/6,p10=10**Math.floor(Math.log10(target)),len=[1,2,5,10].map(v=>v*p10).filter(v=>v<=target).pop()||p10,bl=len/mpp;
+  const sx=fx+6*PX,sy=fy+fh-8*PX;x.fillStyle="rgba(255,255,255,.92)";x.fillRect(sx-2*PX,sy-7*PX,bl+20*PX,11*PX);x.fillStyle="#1c2220";x.fillRect(sx,sy-1*PX,bl,1.4*PX);x.fillRect(sx,sy-3*PX,.5*PX,4*PX);x.fillRect(sx+bl-.5*PX,sy-3*PX,.5*PX,4*PX);
+  x.font=`${3*PX}px ${FONT}`;x.fillText(`${len>=1000?len/1000+" km":len+" m"}`,sx+bl+2*PX,sy+.6*PX);x.font=`${2.4*PX}px ${FONT}`;x.fillText("縮尺は図の中央付近で正確",sx,sy-3.6*PX);
+  const nx=fx+fw-12*PX,ny=fy+8*PX;x.fillStyle="rgba(255,255,255,.92)";x.fillRect(nx-6*PX,ny-3*PX,12*PX,16*PX);x.fillStyle="#1c2220";x.beginPath();x.moveTo(nx,ny-1*PX);x.lineTo(nx+3*PX,ny+8*PX);x.lineTo(nx,ny+6*PX);x.lineTo(nx-3*PX,ny+8*PX);x.closePath();x.fill();
+  x.font=`700 ${3.4*PX}px ${FONT}`;x.textAlign="center";x.fillText("N",nx,ny+12.4*PX);x.textAlign="left";
+  x.restore();x.strokeStyle="#555";x.lineWidth=1.5;x.strokeRect(fx,fy,fw,fh);
+  x.fillStyle="#333";x.font=`${3*PX}px ${FONT}`;x.fillText(`出典：国土地理院 地理院タイル（${meta.name}）に調査地点を追記して掲載`,fx,fy+fh+5*PX);
+  x.fillStyle="#666";x.font=`${2.6*PX}px ${FONT}`;x.fillText("位置はGPS・写真GPS・図上指定による概略位置です。座標は現地確認のうえ確定してください。",fx,fy+fh+9.5*PX);
+  let j;try{j=jpg(c,.88)}catch(e){throw new Error("地理院地図の画像を取り込めませんでした")}return {w:420*MM,h:297*MM,pw:CW,ph:CH,jpg:j}}
 $("oPdf").onclick=async()=>{if(!S||(!S.recs.length&&!S.map))return toast("記録がありません");const b=$("oPdf");b.disabled=true;b.textContent="作成中…";
   try{if(document.fonts&&document.fonts.load)await Promise.all(["700 20px 'Zen Kaku Gothic New'","400 20px 'Zen Kaku Gothic New'","400 20px 'IBM Plex Mono'"].map(f=>document.fonts.load(f).catch(()=>{})));
-    const pages=[];if(S.map&&base)pages.push(pageMap());if(S.recs.length)pages.push(...await pagesLedger());await saveFile(stem()+".pdf",buildPdf(pages,`${S.name||""} 調査地点位置図・台帳`))}
+    const pages=[];let warn="";if(S.map&&base)pages.push(pageMap());
+    if($("oGsi").checked){try{const g=await pageGsi(isGsi()?curLayer():"std");if(g)pages.push(g);else warn="位置のある記録がないため、地理院地図のページは作りませんでした"}catch(e){warn="地理院地図のページを作れませんでした："+e.message}}
+    if(S.recs.length)pages.push(...await pagesLedger());if(!pages.length){toast(warn||"出力する内容がありません");return}
+    await saveFile(stem()+".pdf",buildPdf(pages,`${S.name||""} 調査地点位置図・台帳`));if(warn)setTimeout(()=>toast(warn,5000),3200)}
   catch(e){console.error(e);toast("PDFを作成できませんでした："+e.message)}finally{b.disabled=false;b.textContent="PDF（位置図＋台帳）"}};
 
 /* ===== 起動 ===== */
-new ResizeObserver(()=>{resize();if(S&&S.map&&base&&V.s===1&&V.ox===0)fit()}).observe(cv);
+new ResizeObserver(()=>{resize();if(!S)return;if(isGsi()?!Vg.init:(S.map&&base&&Vp.s===1&&Vp.ox===0))fit()}).observe(cv);
 window.addEventListener("orientationchange",()=>setTimeout(()=>{resize()},300));
 (async()=>{let restored=false;
   try{const st=await DB.get("app");if(st&&st.v===2){APP=Object.assign(APP,st);restored=true}
@@ -705,6 +826,6 @@ window.addEventListener("orientationchange",()=>setTimeout(()=>{resize()},300));
   gpsChip();startGps();
   try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
   try{if("serviceWorker" in navigator&&location.protocol==="https:"&&!window.claude)navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}})();
-window.__app={get APP(){return APP},get S(){return S},GK,live,V,llToUV};
+window.__app={get APP(){return APP},get S(){return S},GK,live,get V(){return V},llToUV,merc,unmerc,tileStat};
 </script>
 </body></html>
