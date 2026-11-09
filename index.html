@@ -79,6 +79,24 @@ input[type=range]{-webkit-appearance:auto;appearance:auto;padding:0;border:0;bac
 .float button.txt{font-size:.78rem;font-weight:700}
 .chk{display:flex;align-items:center;gap:10px;min-height:44px;font-size:.9rem}
 .ver{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);margin:0}
+.thumbs .tb{padding:0;border:0;min-height:0;background:none;display:block;width:100%;border-radius:6px}
+.readylist{display:flex;flex-direction:column;gap:8px}
+.ready{border:2px solid var(--shu);border-radius:12px;padding:12px;background:var(--shu-weak)}
+.ready .fn{margin:0;color:var(--ink);font-size:.88rem;text-align:left;font-family:var(--f-body)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
+.pgrid figure{margin:0}
+.pgrid img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;display:block;background:var(--map-bg)}
+.pgrid figcaption{font-family:var(--f-mono);font-size:.66rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.viewer{position:fixed;inset:0;z-index:36;background:#0b0d0c;color:#eef2ef;display:flex;flex-direction:column}
+.vw-head,.vw-foot{display:flex;align-items:center;gap:10px;padding:10px max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px))}
+.vw-head{padding-top:calc(10px + env(safe-area-inset-top,0px))}
+.vw-head span{flex:1;min-width:0;font-family:var(--f-mono);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vw-img{flex:1;min-height:0;position:relative}
+.vw-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.vw-foot{flex-direction:column;align-items:stretch;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.vw-foot .hint{color:#b8c2bd;text-align:center}
+.viewer button{background:#26302c;border-color:#3a4641;color:#eef2ef}
+.viewer button.pri{background:var(--shu);border-color:var(--shu);color:#fff}
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;background:var(--panel);border-radius:16px 16px 0 0;max-height:90%;display:flex;flex-direction:column;box-shadow:0 -2px 12px rgba(0,0,0,.2)}
 @media (min-width:820px){.sheet{left:auto;right:max(16px,env(safe-area-inset-right,0px));bottom:16px;width:450px;border-radius:16px;max-height:calc(100% - 32px)}}
@@ -126,7 +144,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--m
 .catedit span .dot{width:10px;height:10px;border-radius:50%}
 .catedit span button{min-height:30px;width:30px;padding:0;border-radius:50%;font-size:.8rem}
 .mono{font-family:var(--f-mono)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.9rem;max-width:min(92vw,520px);z-index:40;text-align:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.9rem;max-width:min(92vw,520px);z-index:40;text-align:center;pointer-events:none}
 .ready{display:flex;flex-direction:column;gap:10px;align-items:stretch;text-align:center}
 .ready .fn{font-family:var(--f-mono);font-size:.85rem;word-break:break-all;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
@@ -183,12 +201,13 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--m
       <div class="cats" id="recCats" role="radiogroup" aria-label="区分"></div>
     </div>
     <div class="grp">
-      <h3>写真</h3>
+      <h3>写真 <span id="photoCount"></span></h3>
       <div class="btns">
-        <span class="file"><button type="button" class="pri">📷 撮影</button><input id="camIn" type="file" accept="image/*" capture="environment" aria-label="撮影"></span>
+        <span class="file"><button type="button" class="pri" id="camBtn">📷 撮影</button><input id="camIn" type="file" accept="image/*" capture="environment" aria-label="撮影"></span>
         <span class="file"><button type="button">写真を選ぶ</button><input id="libIn" type="file" accept="image/*" multiple aria-label="写真を選ぶ"></span>
       </div>
       <div class="thumbs" id="recPhotos"></div>
+      <p class="hint">写真を押すと大きく表示し、1枚ずつ保存できます。</p>
     </div>
     <div class="grp">
       <h3>台帳項目</h3>
@@ -216,6 +235,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--m
       <button type="button" class="pri" id="recSaveNext">保存して次へ</button>
       <button type="button" id="recSave">保存して閉じる</button>
     </div>
+    <label class="chk"><input type="checkbox" id="burstChk"> 保存後、このまま撮影を続ける（次の記録でカメラを開く）</label>
     <div id="recDelBox"></div>
   </div>
 </section>
@@ -232,19 +252,26 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--m
   <div class="sh-head"><h2 id="outTitle">出力・保存</h2><button type="button" data-close>閉じる</button></div>
   <div class="sh-body">
     <p class="hint" id="outSite"></p>
+    <div class="ready" id="readyBox" hidden>
+      <p class="fn" id="readyTitle"></p>
+      <div class="readylist" id="readyList"></div>
+      <p class="hint">共有のメニューで「"ファイル"に保存」（写真は「画像を保存」も可）を選んでください。</p>
+    </div>
+    <div class="status warn" id="outErr" hidden></div>
     <div class="grp"><h3>成果品</h3>
       <button type="button" class="pri" id="oPdf">PDF（位置図＋台帳）</button>
       <label class="chk"><input type="checkbox" id="oGsi"> 地理院地図の位置図ページを加える</label>
-      <div class="btns"><button type="button" id="oCsv">台帳CSV</button><button type="button" id="oPhotos">写真一式（ZIP）</button></div>
-      <p class="hint">アプリ内で撮影した写真は、iPhoneの「写真」アプリには残りません。作業の終わりに「写真一式」を書き出してください。</p>
+      <button type="button" id="oCsv">台帳CSV</button>
+    </div>
+    <div class="grp"><h3>写真</h3>
+      <div class="btns"><button type="button" id="oPhotos">写真一式（ZIP）</button><button type="button" id="oPhotoEach">写真を個別に保存</button></div>
+      <p class="hint">アプリ内で撮影した写真は、iPhoneの「写真」アプリには残りません。作業の終わりに書き出してください。ZIPがうまくいかないときは「写真を個別に保存」を使います（「画像を保存」で「写真」アプリへ保存できます）。</p>
+      <div id="photoPick" class="grp" hidden></div>
     </div>
     <div class="grp"><h3>作業ファイル</h3>
       <button type="button" id="oProj">この調査地点の作業ファイルを書き出す（ZIP）</button>
-      <p class="hint">図面・写真・入力内容をまとめた1ファイルです。別の端末で「設定 → 作業ファイルを開く」から続きを作業できます。</p>
-    </div>
-    <div class="ready" id="readyBox" hidden>
-      <p class="fn" id="readyName"></p>
-      <button type="button" class="pri" id="readyShare">共有・保存する（「ファイルに保存」を選択）</button>
+      <button type="button" id="oProjJson">写真なしの作業ファイル（JSON）</button>
+      <p class="hint">ZIPには図面・写真・入力内容が入ります。大きいときは自動で分割します（開くときは分割したファイルをまとめて選びます）。ZIPを保存できないときは、写真なしの作業ファイルと「写真を個別に保存」を使ってください。</p>
     </div>
   </div>
 </section>
@@ -284,6 +311,13 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--m
       <div class="row2"><input id="catNew" placeholder="例：土塁" aria-label="追加する区分" autocomplete="off"><button type="button" id="catAdd">区分を追加</button></div>
       <p class="hint">記録で使っている区分は削除できません。区分ごとに番号と色が分かれます。</p>
     </div>
+    <div class="grp"><h3>撮影</h3>
+      <button type="button" id="burstBtn">連続撮影：オン</button>
+      <p class="hint">オンのとき、「この場所で記録」を押すとすぐカメラが開き、保存後もそのまま次の記録の撮影に進みます。</p>
+      <label class="f">写真の大きさ（保存するとき）<select id="photoMax"><option value="0">元のまま</option><option value="3000">長い辺 3000px</option><option value="2400">長い辺 2400px（推奨）</option><option value="1600">長い辺 1600px</option></select></label>
+      <p class="hint">小さくすると容量が減り、書き出しが安定します。撮影日時と位置は台帳に記録されます（写真ファイル内の位置情報は残りません）。</p>
+      <p class="hint" id="usageInfo"></p>
+    </div>
     <div class="grp"><h3>位置の測り方</h3>
       <label class="f">測位の時間<select id="fixSec"><option value="5">5秒（最良値を採用）</option><option value="10" selected>10秒（最良値を採用）</option><option value="20">20秒（最良値を採用）</option></select></label>
       <button type="button" id="wakeBtn">記録中は画面を消さない：オン</button>
@@ -291,13 +325,20 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--m
       <p class="hint">模擬GPSをオンにすると、図面をタップした場所を現在地として扱います。現地ではオフにしてください。</p>
     </div>
     <div class="grp"><h3>作業ファイル</h3>
-      <span class="file"><button type="button">作業ファイルを開く（ZIP）</button><input id="projIn" type="file" accept=".zip,application/zip" aria-label="作業ファイルを開く"></span>
+      <span class="file"><button type="button">作業ファイルを開く（ZIP・JSON）</button><input id="projIn" type="file" accept=".zip,.json,application/zip,application/json" multiple aria-label="作業ファイルを開く"></span>
+      <p class="hint">分割したZIPは、すべてまとめて選んでください。</p>
       <p class="hint" id="storeInfo"></p>
     </div>
     <p class="ver">調査地点台帳 v<span class="verNo"></span>　地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院 地理院タイル</a></p>
   </div>
 </section>
 
+<div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-label="写真">
+  <div class="vw-head"><span id="vwName"></span><button type="button" id="vwClose">閉じる</button></div>
+  <div class="vw-img"><img id="vwImg" alt=""></div>
+  <div class="vw-foot"><p class="hint" id="vwInfo"></p>
+    <div class="btns"><button type="button" id="vwPrev" aria-label="前の写真">◀ 前</button><button type="button" class="pri" id="vwSave">この写真を保存</button><button type="button" id="vwNext" aria-label="次の写真">次 ▶</button></div></div>
+</div>
 <datalist id="kindList"></datalist>
 <datalist id="eras"><option value="グスク時代"><option value="近世"><option value="近代"><option value="現代"><option value="不明"></datalist>
 <datalist id="states"><option value="良好"><option value="一部崩落"><option value="崩落"><option value="植生被覆"><option value="埋没"><option value="開口"><option value="閉塞"><option value="改修（コンクリート）"><option value="現役（管理あり）"></datalist>
@@ -311,7 +352,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function toast(m,ms=3000){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,ms)}
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
-const APP_VERSION="1.1（2026-11-08）";
+const APP_VERSION="1.2（2026-11-09）";
 document.querySelectorAll(".verNo").forEach(e=>e.textContent=APP_VERSION);
 /* ===== 地理院タイル ===== */
 const GSI={std:{name:"標準地図",ext:"png",min:5,max:18},pale:{name:"淡色地図",ext:"png",min:5,max:18},seamlessphoto:{name:"写真",ext:"jpg",min:2,max:18},hillshademap:{name:"陰影起伏図",ext:"png",min:2,max:16}};
@@ -320,6 +361,9 @@ const merc=(lat,lon)=>{const s=Math.sin(lat*Math.PI/180);return {x:(lon+180)/360
 const unmerc=(x,y)=>{const n=Math.PI-2*Math.PI*y/256;return {lat:180/Math.PI*Math.atan(Math.sinh(n)),lon:x/256*360-180}};
 const MPP0=156543.03392;/* 赤道でのズーム0の1ピクセルあたりm */
 const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const TOUCH=IOS||!!(window.matchMedia&&matchMedia("(pointer:coarse)").matches);
+const STANDALONE=!!(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches));
+let ZIP_MAX=80*1048576;/* ZIP 1つあたりの上限（超えると分割） */
 
 /* ===== 区分（構造物の種類）と色 ===== */
 const PALETTE=["#c63d2b","#1f6fbf","#2e8b57","#b07a00","#7b3fa0","#d0631c","#00838f","#8a5a44","#c2185b","#5c6b00","#3f51b5","#666666"];
@@ -362,7 +406,7 @@ function readExif(buf){try{const dv=new DataView(buf);if(dv.getUint16(0)!==0xFFD
 
 /* ===== 状態：APP（全体）と S（選択中の調査地点） ===== */
 const newSite=(name="")=>({id:"s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,addr:"",who:"",map:null,zone:15,geoMode:"one",cps:[],mpu:null,denom:1000,recs:[],seq:0,created:new Date().toISOString()});
-let APP={v:2,sites:[],cur:null,cats:DEFAULT_CATS.map((n,i)=>({name:n,color:PALETTE[i]})),fixSec:10,sim:false,wake:true};
+let APP={v:2,sites:[],cur:null,cats:DEFAULT_CATS.map((n,i)=>({name:n,color:PALETTE[i]})),fixSec:10,sim:false,wake:true,burst:true,photoMax:2400};
 let S=null,base=null,pdfDoc=null,G=null,geoMsg="",listFilter="";
 const live={fix:null,watch:null,simFix:null,err:null};
 const catColor=n=>(APP.cats.find(c=>c.name===n)||{}).color||"#666666";
@@ -374,7 +418,19 @@ const isGsi=()=>curLayer()!=="pdf";
 /* ===== 端末内の自動保存（IndexedDB） ===== */
 const DB={db:null,async open(){if(this.db)return this.db;this.db=await new Promise((res,rej)=>{const r=indexedDB.open("chosa-chiten",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});return this.db},
   async put(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction("kv","readwrite");tx.objectStore("kv").put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})},
-  async get(k){const db=await this.open();return new Promise((res,rej)=>{const r=db.transaction("kv").objectStore("kv").get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}};
+  async get(k){const db=await this.open();return new Promise((res,rej)=>{const r=db.transaction("kv").objectStore("kv").get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
+  async del(k){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction("kv","readwrite");tx.objectStore("kv").delete(k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})},
+  async keys(){const db=await this.open();return new Promise((res,rej)=>{const r=db.transaction("kv").objectStore("kv").getAllKeys();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}};
+/* 写真の本体は記録とは別に1枚ずつ保存する（v1.2〜） */
+const phKey=(site,p)=>`ph:${site.id}:${p.id}`;
+async function getPhoto(site,p){if(p.blob)return {blob:p.blob,low:false};
+  try{const b=await DB.get(phKey(site,p));if(b&&b.size)return {blob:b,low:false}}catch(e){}
+  if(p.thumb){try{return {blob:await (await fetch(p.thumb)).blob(),low:true}}catch(e){}}return {blob:null,low:false}}
+async function delPhotos(site,ps){for(const p of ps){try{await DB.del(phKey(site,p))}catch(e){}}}
+async function migratePhotos(){let moved=0;for(const st of APP.sites)for(const r of st.recs)for(const p of r.photos){if(p.blob){try{await DB.put(phKey(st,p),p.blob);p.size=p.blob.size;delete p.blob;moved++}catch(e){}}}
+  if(moved)try{await DB.put("app",APP)}catch(e){}return moved}
+async function cleanOrphans(){try{const keys=await DB.keys(),live=new Set();for(const st of APP.sites)for(const r of st.recs)for(const p of r.photos)live.add(phKey(st,p));
+  for(const k of keys)if(typeof k==="string"&&k.startsWith("ph:")&&!live.has(k))await DB.del(k)}catch(e){}}
 async function legacyGet(){/* 旧「古墓台帳 野外版」のデータを引き継ぐ */
   return new Promise(res=>{try{const r=indexedDB.open("kobo-field",1);r.onupgradeneeded=()=>{r.transaction.abort();res(null)};
     r.onsuccess=()=>{try{const g=r.result.transaction("kv").objectStore("kv").get("state");g.onsuccess=()=>res(g.result||null);g.onerror=()=>res(null)}catch(e){res(null)}};r.onerror=()=>res(null)}catch(e){res(null)}})}
@@ -564,7 +620,8 @@ const RF=["no","date","kind","era","state","note","name","addr","who","photoNo"]
 function nextNo(cat){let m=0;S.recs.forEach(r=>{if(r.cat===cat){const n=parseInt(r.no,10);if(n>m)m=n}});return m+1}
 function lastCat(){const r=[...S.recs].sort((a,b)=>(b.updated||"").localeCompare(a.updated||""))[0];return r?r.cat:APP.cats[0].name}
 function newDraft(cat){cat=cat||lastCat();return {cat,no:String(nextNo(cat)),name:S.name||"",addr:S.addr||"",kind:"",era:"",state:"",date:today(),who:S.who||"",photoNo:"",note:"",photos:[],pos:null}}
-function openNew(){if(!S)return toast("先に「設定」で調査地点を作成してください");wakeOn();editId=null;noTouched=false;draft=newDraft();fillForm();$("recTitle").textContent="新規記録";$("recDelBox").innerHTML="";openSheet("shRec");measure()}
+function openCamera(){try{$("camIn").click()}catch(e){}}
+function openNew(){if(!S)return toast("先に「設定」で調査地点を作成してください");wakeOn();editId=null;noTouched=false;draft=newDraft();fillForm();$("recTitle").textContent="新規記録";$("recDelBox").innerHTML="";openSheet("shRec");measure();if(APP.burst&&TOUCH)openCamera()}
 function openRec(id){const r=S.recs.find(r=>r.id===id);if(!r)return;editId=id;noTouched=true;draft={...r,photos:r.photos.slice()};
   draft.pos=has(r.lat)?{lat:r.lat,lon:r.lon,acc:r.acc,src:r.src,n:r.nfix||0}:null;fillForm();$("recTitle").textContent=`${recLabel(r)} の編集`;
   $("recDelBox").innerHTML=`<button type="button" id="recDel" style="width:100%">この記録を削除</button>`;openSheet("shRec");renderPos();draw()}
@@ -591,12 +648,20 @@ function renderPos(msg){const p=draft&&draft.pos,b=$("posBox");let h="";
 $("posBox").addEventListener("click",e=>{if(e.target.id==="reMeasure")measure();
   if(e.target.id==="placeOnMap"){if(!G&&!isGsi())return toast("図面の位置合わせ後に指定できます。「地図」で地理院地図に切り替えれば、位置合わせなしで指定できます",5000);clearTimeout(measureT);measuring=null;readForm();closeSheets(true);setMode("placeRec",`${draft.cat}${draft.no}の位置をタップ`)}});
 function photoName(r,i){const head=(r.photoNo||"").trim()||`${r.cat}${String(r.no).padStart(2,"0")}`;return `${head}_${i+1}`}
-function renderPhotos(){$("recPhotos").innerHTML=draft.photos.map((p,i)=>`<figure><img src="${p.thumb}" alt="写真${i+1}"><figcaption>${esc(photoName(draft,i))}</figcaption><button type="button" class="x" data-rm="${i}" aria-label="写真${i+1}を外す">✕</button></figure>`).join("")}
-$("recPhotos").addEventListener("click",e=>{const i=e.target.dataset.rm;if(i===undefined)return;draft.photos.splice(+i,1);renderPhotos()});
-async function addPhotoFiles(files){for(const f of files){try{const buf=await f.arrayBuffer();const ex=readExif(buf);const blob=new Blob([buf],{type:f.type||"image/jpeg"});const img=await blobImage(blob);
-      draft.photos.push({id:"p"+(++S.seq),blob,thumb:scaleTo(img,320,.75),taken:ex.dt||new Date().toISOString(),orig:f.name,lat:ex.lat??null,lon:ex.lon??null});
+function renderPhotos(){$("recPhotos").innerHTML=draft.photos.map((p,i)=>`<figure><button type="button" class="tb" data-view="${i}" aria-label="写真${i+1}を大きく表示"><img src="${p.thumb}" alt=""></button><figcaption>${esc(photoName(draft,i))}</figcaption><button type="button" class="x" data-rm="${i}" aria-label="写真${i+1}を外す">✕</button></figure>`).join("");
+  $("photoCount").textContent=draft.photos.length?`${draft.photos.length}枚`:"";updateCamBtn()}
+function updateCamBtn(){$("camBtn").textContent=draft&&draft.photos.length?`📷 続けて撮影（${draft.photos.length+1}枚目）`:"📷 撮影"}
+$("recPhotos").addEventListener("click",e=>{const rm=e.target.closest("[data-rm]");if(rm){draft.photos.splice(+rm.dataset.rm,1);renderPhotos();return}
+  const v=e.target.closest("[data-view]");if(v)openViewer(draft.photos.map((p,i)=>({p,site:S,name:photoName(draft,i)})),+v.dataset.view)});
+function resizeBlob(img,max,q){const s=max/Math.max(img.naturalWidth,img.naturalHeight),c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);
+  c.getContext("2d").drawImage(img,0,0,c.width,c.height);return new Promise(res=>c.toBlob(b=>{c.width=c.height=0;res(b)},"image/jpeg",q))}
+async function addPhotoFiles(files){const site=S;for(const f of files){try{const buf=await f.arrayBuffer();const ex=readExif(buf);let blob=new Blob([buf],{type:f.type||"image/jpeg"});const img=await blobImage(blob);
+      const max=+APP.photoMax||0;if(max&&Math.max(img.naturalWidth,img.naturalHeight)>max){const r=await resizeBlob(img,max,.88);if(r)blob=r}
+      const p={id:"p"+(++site.seq),thumb:scaleTo(img,320,.75),taken:ex.dt||new Date().toISOString(),orig:f.name,lat:ex.lat??null,lon:ex.lon??null,size:blob.size};
+      try{await DB.put(phKey(site,p),blob)}catch(err){p.blob=blob;toast("写真を端末に保存できませんでした。早めに書き出してください",5000)}
+      if(site!==S||!draft)continue;draft.photos.push(p);
       if(!draft.pos&&has(ex.lat))draft.pos={lat:ex.lat,lon:ex.lon,acc:ex.acc??null,src:"写真",n:0}}catch(e){toast(`${f.name}：${e.message}`)}}
-  readForm();renderPhotos();if(!measuring)renderPos()}
+  if(!draft)return;readForm();renderPhotos();if(!measuring)renderPos()}
 $("camIn").onchange=e=>{const fs=[...e.target.files];e.target.value="";if(fs.length)addPhotoFiles(fs)};
 $("libIn").onchange=e=>{const fs=[...e.target.files];e.target.value="";if(fs.length)addPhotoFiles(fs)};
 function scaleTo(img,max,q){const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);return c.toDataURL("image/jpeg",q)}
@@ -604,13 +669,17 @@ function commit(){readForm();if(!String(draft.no).trim()){toast("番号を入力
   const dup=S.recs.find(r=>r.cat===draft.cat&&String(r.no).trim()===String(draft.no).trim()&&r.id!==editId);if(dup){toast(`${recLabel(dup)} は既にあります。番号を変えてください`);return false}
   const p=draft.pos,rec={id:editId??(++S.seq),cat:draft.cat,photos:draft.photos,lat:p?p.lat:null,lon:p?p.lon:null,acc:p?p.acc:null,src:p?p.src:"",nfix:p?p.n:0,updated:new Date().toISOString()};
   RF.forEach(k=>rec[k]=draft[k]);
-  if(editId!==null){const i=S.recs.findIndex(r=>r.id===editId);S.recs[i]={...S.recs[i],...rec}}else S.recs.push(rec);
+  if(editId!==null){const i=S.recs.findIndex(r=>r.id===editId),keep=new Set(rec.photos.map(p=>p.id));delPhotos(S,S.recs[i].photos.filter(p=>!keep.has(p.id)));S.recs[i]={...S.recs[i],...rec}}else S.recs.push(rec);
   recompute();persist();toast(`${recLabel(rec)} を保存しました（写真${rec.photos.length}枚）`);return true}
 $("recSave").onclick=()=>{if(commit()){editId=null;closeSheets()}};
-$("recSaveNext").onclick=()=>{const cat=draft.cat;if(commit()){editId=null;noTouched=false;draft=newDraft(cat);fillForm();$("recTitle").textContent="新規記録";$("recDelBox").innerHTML="";$("shRec").querySelector(".sh-body").scrollTop=0;measure()}};
+$("recSaveNext").onclick=()=>{const cat=draft.cat;if(!commit())return;editId=null;noTouched=false;draft=newDraft(cat);fillForm();$("recTitle").textContent="新規記録";$("recDelBox").innerHTML="";$("shRec").querySelector(".sh-body").scrollTop=0;measure();if(APP.burst&&TOUCH)openCamera()};
+function updateBurstUI(){$("recSaveNext").textContent=APP.burst?"保存して撮影を続ける":"保存して次へ";$("burstChk").checked=!!APP.burst;$("burstBtn").textContent=`連続撮影：${APP.burst?"オン":"オフ"}`;$("burstBtn").classList.toggle("on",!!APP.burst)}
+$("burstChk").onchange=e=>{APP.burst=e.target.checked;updateBurstUI();persist()};
+$("burstBtn").onclick=()=>{APP.burst=!APP.burst;updateBurstUI();persist()};
+$("photoMax").onchange=e=>{APP.photoMax=+e.target.value;persist()};
 let delArm=false;
 $("recDelBox").addEventListener("click",e=>{if(e.target.id!=="recDel")return;if(!delArm){delArm=true;e.target.textContent="もう一度押すと削除します";setTimeout(()=>{delArm=false;if($("recDel"))$("recDel").textContent="この記録を削除"},3000);return}
-  delArm=false;S.recs=S.recs.filter(r=>r.id!==editId);editId=null;recompute();persist();closeSheets();toast("削除しました")});
+  delArm=false;const gone=S.recs.find(r=>r.id===editId);if(gone)delPhotos(S,gone.photos);S.recs=S.recs.filter(r=>r.id!==editId);editId=null;recompute();persist();closeSheets();toast("削除しました")});
 
 const sorted=()=>S?[...S.recs].sort((a,b)=>catOrder(a.cat)-catOrder(b.cat)||(parseInt(a.no)||0)-(parseInt(b.no)||0)):[];
 function renderList(){const L=$("list");if(!S){L.innerHTML=`<p class="hint">調査地点がありません。「設定」から作成してください。</p>`;$("listCats").innerHTML="";return}
@@ -627,7 +696,9 @@ $("listCats").addEventListener("click",e=>{const b=e.target.closest("button");if
 
 /* ===== シート ===== */
 const SHEETS=["shRec","shList","shOut","shSet"];
-function openSheet(id){hideLayerPanel();SHEETS.forEach(s=>$(s).hidden=s!==id);if(id==="shOut")$("oGsi").checked=!!S&&(isGsi()||!S.map);$("scrim").hidden=false;if(id==="shSet")renderSettings();if(id==="shOut"){$("readyBox").hidden=true;$("outSite").textContent=S?`対象：${S.name||"（名称未入力）"}（${S.recs.length}件）`:"調査地点がありません"}}
+function openSheet(id,keepReady){hideLayerPanel();const was=!$(id).hidden;SHEETS.forEach(s=>$(s).hidden=s!==id);$("scrim").hidden=false;if(id==="shSet")renderSettings();
+  if(id==="shOut"&&!was){$("oGsi").checked=!!S&&(isGsi()||!S.map);if(!keepReady){$("readyBox").hidden=true;outError("");$("photoPick").hidden=true}
+    $("outSite").textContent=S?`対象：${S.name||"（名称未入力）"}（${S.recs.length}件・写真${S.recs.reduce((n,r)=>n+r.photos.length,0)}枚）`:"調査地点がありません"}}
 function closeSheets(keepDraft){SHEETS.forEach(s=>$(s).hidden=true);$("scrim").hidden=true;if(!keepDraft){clearTimeout(measureT);measuring=null;if(!uiMode)editId=null;draw()}}
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>closeSheets());$("scrim").onclick=()=>closeSheets();
 $("dRec").onclick=openNew;$("dList").onclick=()=>{renderList();openSheet("shList")};$("dOut").onclick=()=>openSheet("shOut");$("dSet").onclick=()=>openSheet("shSet");$("helloSet").onclick=()=>openSheet("shSet");
@@ -639,6 +710,8 @@ function renderSettings(){const ss=$("siteSel");ss.innerHTML=APP.sites.length?""
   $("sName").value=S?S.name:"";$("sAddr").value=S?S.addr:"";$("sWho").value=S?S.who:"";if(S){$("zone").value=S.zone;$("denom").value=S.denom;$("mpu").value=has(S.mpu)?S.mpu.toFixed(6):""}
   $("fixSec").value=APP.fixSec;$("simBtn").textContent=`模擬GPS（PC試験用）：${APP.sim?"オン":"オフ"}`;$("simBtn").classList.toggle("on",APP.sim);
   $("wakeBtn").textContent=`記録中は画面を消さない：${APP.wake?"オン":"オフ"}`;$("wakeBtn").hidden=!("wakeLock" in navigator);
+  updateBurstUI();$("photoMax").value=String(APP.photoMax??2400);
+  try{navigator.storage.estimate().then(e=>{$("usageInfo").textContent=`この端末での使用量：約${Math.round((e.usage||0)/1048576)} MB`}).catch(()=>{})}catch(e){}
   renderCats();renderGeo()}
 function renderCats(){const used=new Set(APP.sites.flatMap(s=>s.recs.map(r=>r.cat)));
   $("catEdit").innerHTML=APP.cats.map((c,i)=>`<span><span class="dot" style="background:${c.color}"></span>${esc(c.name)}${used.has(c.name)?"":`<button type="button" data-delcat="${i}" aria-label="${esc(c.name)}を削除">✕</button>`}</span>`).join("")}
@@ -668,7 +741,7 @@ $("siteSel").onchange=async e=>{await switchSite(e.target.value);renderSettings(
 $("siteNew").onclick=async()=>{const s=newSite("");APP.sites.push(s);await switchSite(s.id);renderSettings();$("sName").focus();toast("調査地点を作成しました。名称を入力し、図面を開いてください",4000)};
 let siteDelArm=false;
 $("siteDel").onclick=async()=>{if(!S)return;if(!siteDelArm){siteDelArm=true;$("siteDel").textContent="もう一度押すと削除（元に戻せません）";setTimeout(()=>{siteDelArm=false;$("siteDel").textContent="この地点を削除"},4000);return}
-  siteDelArm=false;$("siteDel").textContent="この地点を削除";const nm=S.name;APP.sites=APP.sites.filter(s=>s!==S);await switchSite(APP.sites[0]?APP.sites[0].id:null);renderSettings();toast(`「${nm||"（名称未入力）"}」を削除しました`)};
+  siteDelArm=false;$("siteDel").textContent="この地点を削除";const nm=S.name;for(const r of S.recs)delPhotos(S,r.photos);APP.sites=APP.sites.filter(s=>s!==S);await switchSite(APP.sites[0]?APP.sites[0].id:null);renderSettings();toast(`「${nm||"（名称未入力）"}」を削除しました`)};
 $("mapIn").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f||!S)return;const isPdf=/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name);
   S.map={kind:isPdf?"pdf":"img",name:f.name,mime:f.type||(isPdf?"application/pdf":"image/jpeg"),blob:new Blob([await f.arrayBuffer()],{type:f.type||(isPdf?"application/pdf":"image/jpeg")}),page:1};
   S.cps=[];S.mpu=null;S.layer="pdf";Vp.s=1;Vp.ox=Vp.oy=0;$("cpList").dataset.sig="-";if(!S.name)S.name=f.name.replace(/\.[^.]+$/,"");await openMap();renderSettings();persist()};
@@ -676,12 +749,15 @@ $("pageSel").onchange=async e=>{S.map.page=+e.target.value;S.cps=[];$("cpList").
 
 /* ===== ZIP（無圧縮）書出し・読込 ===== */
 const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=t[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}})();
-async function makeZip(files){const enc=new TextEncoder(),parts=[],cen=[];let off=0;const d=new Date(),dt=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1)),dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate());
-  for(const f of files){const name=enc.encode(f.name),data=f.data instanceof Uint8Array?f.data:new Uint8Array(f.data instanceof Blob?await f.data.arrayBuffer():f.data),crc=CRC(data);
-    const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(10,dt,true);h.setUint16(12,dd,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);
-    parts.push(new Uint8Array(h.buffer),name,data);
-    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(12,dt,true);c.setUint16(14,dd,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,name.length,true);c.setUint32(42,off,true);
-    cen.push(new Uint8Array(c.buffer),name);off+=30+name.length+data.length}
+/* 1ファイルずつ読み、CRCを計算したら中身は元のBlobを参照するだけにする（メモリを節約） */
+async function makeZip(files,onProg){const enc=new TextEncoder(),parts=[],cen=[];let off=0,i=0;const d=new Date(),dt=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1)),dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate());
+  for(const f of files){const name=enc.encode(f.name);const blob=f.data instanceof Blob?f.data:new Blob([f.data]);let crc;
+    try{crc=CRC(new Uint8Array(await blob.arrayBuffer()))}catch(e){throw new Error(`「${f.name}」を読み込めませんでした（${e&&e.name||e}）`)}
+    const len=blob.size;
+    const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(10,dt,true);h.setUint16(12,dd,true);h.setUint32(14,crc,true);h.setUint32(18,len,true);h.setUint32(22,len,true);h.setUint16(26,name.length,true);
+    parts.push(new Uint8Array(h.buffer),name,blob);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(12,dt,true);c.setUint16(14,dd,true);c.setUint32(16,crc,true);c.setUint32(20,len,true);c.setUint32(24,len,true);c.setUint16(28,name.length,true);c.setUint32(42,off,true);
+    cen.push(new Uint8Array(c.buffer),name);off+=30+name.length+len;if(onProg)onProg(++i,files.length)}
   const cs=cen.reduce((s,b)=>s+b.length,0),e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
   return new Blob([...parts,...cen,new Uint8Array(e.buffer)],{type:"application/zip"})}
 async function readZip(buf){const dv=new DataView(buf),u8=new Uint8Array(buf),dec=new TextDecoder();let e=-1;for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-65557);i--)if(dv.getUint32(i,true)===0x06054b50){e=i;break}
@@ -690,47 +766,109 @@ async function readZip(buf){const dv=new DataView(buf),u8=new Uint8Array(buf),de
     const ds=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true);let data=u8.slice(ds,ds+cs);
     if(m===8){data=new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer())}
     out[name]=data;p+=46+nl+xl+cl}return out}
+function splitBySize(files,max){const groups=[[]];let sz=0;for(const f of files){const n=f.data&&f.data.size!=null?f.data.size:(f.data&&f.data.length)||0;
+  if(groups.at(-1).length&&sz+n>max){groups.push([]);sz=0}groups.at(-1).push(f);sz+=n}return groups}
+async function photoEntries(onProg){const out=[],bad=[];let low=0,i=0;const list=[];for(const r of sorted())r.photos.forEach((p,k)=>list.push({p,name:photoName(r,k)}));
+  for(const it of list){const g=await getPhoto(S,it.p);if(onProg)onProg(++i,list.length);if(!g.blob){bad.push(it.name);continue}if(g.low)low++;out.push({name:safe(it.name)+".jpg",data:g.blob,p:it.p})}
+  return {out,bad,low,total:list.length}}
 
 /* ===== 保存：Claude上はダウンロード機能、iPhone・iPadは共有シート、PCはダウンロード ===== */
-let readyFile=null;
-async function saveFile(filename,blob){let dl=null;if(window.claude&&typeof claude.use==="function"){try{dl=await claude.use("downloads")}catch(e){}}
-  if(dl){try{await dl.save({filename,data:blob});toast(`${filename} を保存しました`)}catch(e){toast(e&&e.code==="declined"?"保存を取りやめました":`保存できませんでした（${e&&e.message||e}）`)}return}
-  if(window.claude){toast("この画面ではファイルを保存できません",4000);return}
-  const file=new File([blob],filename,{type:blob.type||"application/octet-stream"});
-  if(IOS&&navigator.canShare&&navigator.share){let ok=false;try{ok=navigator.canShare({files:[file]})}catch(e){}
-    if(ok){readyFile=file;$("readyName").textContent=`${filename}（${(blob.size/1048576).toFixed(1)} MB）の準備ができました`;$("readyBox").hidden=false;openSheet("shOut");$("readyBox").hidden=false;$("readyShare").scrollIntoView({block:"nearest"});return}}
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},10000);toast(`${filename} を保存しました`)}
-$("readyShare").onclick=async()=>{if(!readyFile)return;try{await navigator.share({files:[readyFile],title:readyFile.name});toast("共有シートで保存先を選びました")}catch(e){if(e&&e.name!=="AbortError")toast("共有できませんでした："+e.message)}};
+const MB=b=>(b/1048576).toFixed(1);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function outError(msg){const e=$("outErr");e.textContent=msg||"";e.hidden=!msg;if(msg)e.scrollIntoView({block:"nearest"})}
+function canShareFiles(files){try{return !!(navigator.share&&navigator.canShare&&navigator.canShare({files}))}catch(e){return false}}
+/* 共有できる形のFileを作る（ZIPなどが断られたら別の形式名で再確認） */
+function shareable(name,blob){for(const t of [blob.type||"application/octet-stream","application/octet-stream"]){const f=new File([blob],name,{type:t});if(canShareFiles([f]))return f}return null}
+function dlLink(name,blob){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},15000)}
+let readyItems=[];
+function offer(title,items){readyItems=items;$("readyTitle").textContent=title;
+  $("readyList").innerHTML=items.map((it,i)=>`<button type="button" class="${i===0?"pri":""}" data-ready="${i}">${esc(it.label)}</button>`).join("");
+  openSheet("shOut",true);$("readyBox").hidden=false;$("shOut").querySelector(".sh-body").scrollTop=0}
+$("readyList").addEventListener("click",async e=>{const b=e.target.closest("[data-ready]");if(!b)return;const it=readyItems[+b.dataset.ready];if(!it)return;
+  try{await navigator.share({files:it.files});b.textContent="✓ "+it.label;b.classList.remove("pri");const nx=b.nextElementSibling;if(nx)nx.classList.add("pri")}
+  catch(err){if(err&&err.name==="AbortError")return;outError(`共有できませんでした（${err&&err.name||""} ${err&&err.message||err}）。写真は「写真を個別に保存」、作業ファイルは「写真なしの作業ファイル」もお試しください。`)}});
+/* list=[{name,blob}]。iPhone・iPadは共有シート、PCはダウンロード、Claude上はダウンロード機能 */
+async function deliver(list,title,group){let dl=null;if(window.claude&&typeof claude.use==="function"){try{dl=await claude.use("downloads")}catch(e){}}
+  if(dl){for(const f of list){try{await dl.save({filename:f.name,data:f.blob})}catch(e){if(e&&e.code==="declined"){toast("保存を取りやめました");return}outError(`保存できませんでした（${e&&e.message||e}）`);return}}toast(list.length>1?`${list.length}件を保存しました`:`${list[0].name} を保存しました`);return}
+  if(window.claude){outError("この画面ではファイルを保存できません。GitHubなどで公開した版を使ってください");return}
+  if(TOUCH&&navigator.share){const files=list.map(f=>shareable(f.name,f.blob));
+    if(files.every(Boolean)){const g=group||1,items=[];for(let i=0;i<files.length;i+=g){const fs=files.slice(i,i+g),sz=fs.reduce((n,f)=>n+f.size,0);
+        items.push({files:fs,label:fs.length===1?`${fs[0].name}（${MB(sz)} MB）を保存`:`${i+1}〜${i+fs.length}枚目（${MB(sz)} MB）を保存`})}
+      offer(title||"保存の準備ができました",items);return}
+    if(IOS&&STANDALONE){outError(`この端末では「${list[0].name.split(".").pop().toUpperCase()}」形式のファイルを共有できませんでした。写真は「写真を個別に保存」、作業ファイルは「写真なしの作業ファイル」を使ってください。`);return}}
+  for(const f of list){dlLink(f.name,f.blob);await sleep(500)}toast(list.length>1?`${list.length}件を保存しました`:`${list[0].name} を保存しました`)}
+async function saveFile(filename,blob){return deliver([{name:filename,blob}])}
+async function busy(btn,label,fn){const t=btn.textContent;btn.disabled=true;btn.textContent=label;outError("");try{await fn(m=>btn.textContent=m)}catch(e){console.error(e);outError(`${t}：できませんでした（${e&&e.message||e}）`)}finally{btn.disabled=false;btn.textContent=t}}
 const safe=s=>String(s).replace(/[\\/:*?"<>|]/g,"_");
 const stem=s=>`${safe(S&&S.name||"調査地点")}_調査地点台帳${s||""}_${today().replace(/-/g,"")}`;
 
-$("oProj").onclick=async()=>{if(!S)return toast("調査地点がありません");const files=[];
-  const meta={app:"chosa-chiten",v:2,appVersion:APP_VERSION,saved:new Date().toISOString(),cats:APP.cats,
-    site:{...S,map:S.map?{kind:S.map.kind,name:S.map.name,mime:S.map.mime,page:S.map.page,file:"map/"+safe(S.map.name)}:null,
-      recs:S.recs.map(r=>({...r,u:undefined,v:undefined,X:undefined,Y:undefined,out:undefined,photos:r.photos.map(p=>({...p,blob:undefined,file:`photos/${p.id}.jpg`}))}))}};
-  files.push({name:"project.json",data:new TextEncoder().encode(JSON.stringify(meta,null,1))});
-  if(S.map)files.push({name:meta.site.map.file,data:S.map.blob});
-  for(const r of S.recs)for(const p of r.photos)files.push({name:`photos/${p.id}.jpg`,data:p.blob});
-  await saveFile(stem("_作業")+".zip",await makeZip(files))};
-$("projIn").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
-  try{const z=await readZip(await f.arrayBuffer());if(!z["project.json"])throw new Error("作業ファイルではありません");const m=JSON.parse(new TextDecoder().decode(z["project.json"]));
+function projMeta(withFiles){return {app:"chosa-chiten",v:2,appVersion:APP_VERSION,saved:new Date().toISOString(),cats:APP.cats,set:S.id+"-"+Date.now().toString(36),
+    site:{...S,map:S.map?{kind:S.map.kind,name:S.map.name,mime:S.map.mime,page:S.map.page,file:withFiles?"map/"+safe(S.map.name):null}:null,
+      recs:S.recs.map(r=>({...r,u:undefined,v:undefined,X:undefined,Y:undefined,mx:undefined,my:undefined,out:undefined,photos:r.photos.map(p=>({...p,blob:undefined,file:withFiles?`photos/${p.id}.jpg`:null}))}))}}}
+$("oProj").onclick=e=>{if(!S)return toast("調査地点がありません");busy(e.currentTarget,"作成中…",async prog=>{
+  const meta=projMeta(true),head=[{name:"project.json",data:new TextEncoder().encode(JSON.stringify(meta,null,1))}];if(S.map)head.push({name:meta.site.map.file,data:S.map.blob});
+  const ph=await photoEntries((i,n)=>prog(`写真を確認中… ${i}/${n}`));const photos=ph.out.map(f=>({name:`photos/${f.p.id}.jpg`,data:f.data}));
+  const groups=splitBySize([...head,...photos],ZIP_MAX),list=[];
+  for(let g=0;g<groups.length;g++){const fs=groups[g].slice();fs.push({name:"part.json",data:new TextEncoder().encode(JSON.stringify({app:"chosa-chiten-part",set:meta.set,index:g+1,total:groups.length}))});
+    const z=await makeZip(fs,(i,n)=>prog(`作成中… ${groups.length>1?`${g+1}/${groups.length}つ目 `:""}${i}/${n}`));list.push({name:stem("_作業")+(groups.length>1?`_${g+1}of${groups.length}`:"")+".zip",blob:z})}
+  if(ph.bad.length||ph.low)outError(`注意：${ph.bad.length?`写真${ph.bad.length}枚を読み込めず、入れていません（${ph.bad.slice(0,3).join("、")}${ph.bad.length>3?"…":""}）。`:""}${ph.low?`写真${ph.low}枚は縮小版のみです。`:""}`);
+  await deliver(list,list.length>1?`作業ファイルを${list.length}つに分けました。すべて保存してください`:"作業ファイルの準備ができました")})};
+$("oProjJson").onclick=e=>{if(!S)return toast("調査地点がありません");busy(e.currentTarget,"作成中…",async()=>{
+  const meta=projMeta(false);await deliver([{name:stem("_作業_写真なし")+".json",blob:new Blob([JSON.stringify(meta)],{type:"application/json"})}],"写真なしの作業ファイルの準備ができました")})};
+$("projIn").onchange=async e=>{const fl=[...e.target.files];e.target.value="";if(!fl.length)return;
+  try{let z={};for(const f of fl){if(/\.json$/i.test(f.name)||f.type==="application/json"){z["project.json"]=new TextEncoder().encode(await f.text())}else Object.assign(z,await readZip(await f.arrayBuffer()))}
+    if(!z["project.json"])throw new Error(fl.length>1||z["part.json"]?"1つ目のファイル（project.jsonの入ったもの）も一緒に選んでください":"作業ファイルではありません");const m=JSON.parse(new TextDecoder().decode(z["project.json"]));
     let site;
     if(m.app==="chosa-chiten"){site=m.site;for(const c of m.cats||[])if(!APP.cats.some(x=>x.name===c.name))APP.cats.push(c)}
     else if(m.app==="kobo-field"){site={...newSite(m.defaults&&m.defaults.dName||""),addr:m.defaults&&m.defaults.dAddr||"",who:m.defaults&&m.defaults.dWho||"",zone:m.zone,geoMode:m.geoMode,cps:m.cps,mpu:m.mpu,denom:m.denom,seq:m.seq,
       map:m.map?{...m.map}:null,recs:m.recs.map(r=>({...r,cat:"墓"}))}}
     else throw new Error("このアプリの作業ファイルではありません");
-    if(site.map){site.map={kind:site.map.kind,name:site.map.name,mime:site.map.mime,page:site.map.page,blob:new Blob([z[site.map.file]],{type:site.map.mime||"application/pdf"})}}
-    site.recs=site.recs.map(r=>({...r,cat:r.cat||"墓",photos:r.photos.map(p=>({...p,blob:new Blob([z[p.file]],{type:"image/jpeg"}),file:undefined}))}));
-    const i=APP.sites.findIndex(s=>s.id===site.id);if(i>=0)APP.sites[i]=site;else APP.sites.push(site);
-    await switchSite(site.id);closeSheets();toast(`「${site.name||"（名称未入力）"}」を開きました（${site.recs.length}件）${i>=0?"・端末内のデータを置き換えました":""}`,4500)}
+    const prev=APP.sites.find(x=>x.id===site.id);
+    if(site.map){const mb=site.map.file&&z[site.map.file];site.map=mb?{kind:site.map.kind,name:site.map.name,mime:site.map.mime,page:site.map.page,blob:new Blob([mb],{type:site.map.mime||"application/pdf"})}:(prev&&prev.map||null)}
+    let miss=0;site.recs=site.recs.map(r=>({...r,cat:r.cat||"墓",photos:r.photos.map(p=>{const q={...p,file:undefined,blob:undefined};const d=p.file&&z[p.file];if(d)q.blob=new Blob([d],{type:"image/jpeg"});else if(!(p.blob))q.need=true;return q})}));
+    for(const r of site.recs)for(const p of r.photos){if(p.blob){try{await DB.put(phKey(site,p),p.blob);p.size=p.blob.size;delete p.blob}catch(err){}}
+      else if(p.need){delete p.need;let ok=false;try{const b=await DB.get(phKey(site,p));ok=!!(b&&b.size)}catch(err){}if(!ok)miss++}}
+    z=null;const i=APP.sites.findIndex(s=>s.id===site.id);if(i>=0)APP.sites[i]=site;else APP.sites.push(site);
+    await switchSite(site.id);closeSheets();toast(`「${site.name||"（名称未入力）"}」を開きました（${site.recs.length}件）${i>=0?"・端末内のデータを置き換えました":""}${miss?`・写真${miss}枚は本体がなく縮小版のみです`:""}`,5500)}
   catch(err){console.error(err);toast("開けませんでした："+err.message,5000)}};
 
 $("oCsv").onclick=()=>{if(!S||!S.recs.length)return toast("台帳が空です");const H=["地点名","区分","番号","遺跡名称","所在地","種別","時代","現状","確認日","調査者","写真番号","写真枚数","位置取得","測位誤差（m）","X（m）","Y（m）","緯度","経度","座標系","備考"];
   const q=v=>{v=v==null?"":String(v);return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v},num=(v,d)=>has(v)?v.toFixed(d):"";
   const rows=sorted().map(r=>[recLabel(r),r.cat,r.no,r.name,r.addr,r.kind,r.era,r.state,r.date,r.who,r.photos.map((_,i)=>photoName(r,i)).join(" "),r.photos.length,r.src||"位置なし",num(r.acc,1),num(r.X,3),num(r.Y,3),num(r.lat,7),num(r.lon,7),has(r.X)?`第${ROMAN[S.zone]}系`:"",r.note]);
-  saveFile(stem()+".csv",new Blob(["﻿"+[H,...rows].map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv"}))};
-$("oPhotos").onclick=async()=>{if(!S)return;const files=[];for(const r of sorted())r.photos.forEach((p,i)=>files.push({name:safe(photoName(r,i))+".jpg",data:p.blob}));
-  if(!files.length)return toast("写真がありません");await saveFile(stem("_写真")+".zip",await makeZip(files))};
+  outError("");saveFile(stem()+".csv",new Blob(["﻿"+[H,...rows].map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv"})).catch(e=>outError("台帳CSV：できませんでした（"+e.message+"）"))};
+$("oPhotos").onclick=e=>{if(!S||!S.recs.some(r=>r.photos.length))return toast("写真がありません");busy(e.currentTarget,"作成中…",async prog=>{
+  const ph=await photoEntries((i,n)=>prog(`写真を確認中… ${i}/${n}`));if(!ph.out.length)throw new Error("読み込める写真がありません");
+  const groups=splitBySize(ph.out,ZIP_MAX),list=[];
+  for(let g=0;g<groups.length;g++){const zb=await makeZip(groups[g],(i,n)=>prog(`作成中… ${groups.length>1?`${g+1}/${groups.length}つ目 `:""}${i}/${n}`));list.push({name:stem("_写真")+(groups.length>1?`_${g+1}of${groups.length}`:"")+".zip",blob:zb})}
+  if(ph.bad.length||ph.low)outError(`注意：${ph.bad.length?`写真${ph.bad.length}枚を読み込めず、入れていません（${ph.bad.slice(0,3).join("、")}${ph.bad.length>3?"…":""}）。`:""}${ph.low?`写真${ph.low}枚は縮小版のみです。`:""}`);
+  await deliver(list,list.length>1?`写真を${list.length}つのZIPに分けました。すべて保存してください`:"写真ZIPの準備ができました")})};
+/* 写真を個別に保存 */
+const BATCH=10;
+function allPhotos(){const out=[];for(const r of sorted())r.photos.forEach((p,k)=>out.push({p,site:S,name:photoName(r,k)}));return out}
+$("oPhotoEach").onclick=()=>{const box=$("photoPick");if(!box.hidden){box.hidden=true;return}const ps=allPhotos();if(!ps.length)return toast("写真がありません");
+  let h=`<p class="hint">写真を押すと1枚ずつ保存できます。まとめて保存するときは下のボタンを使います（${BATCH}枚ずつ）。</p><div class="btns">`;
+  for(let i=0;i<ps.length;i+=BATCH)h+=`<button type="button" data-batch="${i}">${i+1}〜${Math.min(i+BATCH,ps.length)}枚目を保存</button>`;
+  h+=`</div><div class="pgrid">`+ps.map((x,i)=>`<figure><button type="button" class="tb" data-pv="${i}" aria-label="${esc(x.name)}を大きく表示"><img src="${x.p.thumb}" alt=""></button><figcaption>${esc(x.name)}</figcaption></figure>`).join("")+`</div>`;
+  box.innerHTML=h;box.hidden=false;box.scrollIntoView({block:"nearest"})};
+$("photoPick").addEventListener("click",e=>{const v=e.target.closest("[data-pv]");if(v){openViewer(allPhotos(),+v.dataset.pv);return}
+  const b=e.target.closest("[data-batch]");if(!b)return;const i0=+b.dataset.batch;busy(b,"準備中…",async()=>{const ps=allPhotos().slice(i0,i0+BATCH),list=[];let low=0;
+    for(const x of ps){const g=await getPhoto(S,x.p);if(!g.blob)continue;if(g.low)low++;list.push({name:safe(x.name)+".jpg",blob:g.blob})}
+    if(!list.length)throw new Error("写真を読み込めませんでした");if(low)outError(`写真${low}枚は縮小版のみです`);
+    await deliver(list,`写真 ${i0+1}〜${i0+list.length}枚目の準備ができました`,BATCH)})});
+/* 写真ビューア */
+const vw={list:[],i:0,file:null,url:null};
+function fmtTaken(t){return String(t).replace(/^(\d{4}):(\d{2}):(\d{2})/,"$1-$2-$3").replace("T"," ").slice(0,16)}
+function openViewer(list,i){vw.list=list;vw.i=i;$("viewer").hidden=false;showVw()}
+async function showVw(){const it=vw.list[vw.i];if(!it)return;$("vwName").textContent=`${it.name}.jpg（${vw.i+1}/${vw.list.length}）`;$("vwSave").disabled=true;vw.file=null;
+  if(vw.url){URL.revokeObjectURL(vw.url);vw.url=null}$("vwImg").src=it.p.thumb;$("vwInfo").textContent="読み込み中…";$("vwPrev").disabled=vw.i<=0;$("vwNext").disabled=vw.i>=vw.list.length-1;
+  const g=await getPhoto(it.site||S,it.p);if(vw.list[vw.i]!==it)return;if(!g.blob){$("vwInfo").textContent="写真を読み込めませんでした";return}
+  vw.url=URL.createObjectURL(g.blob);$("vwImg").src=vw.url;vw.file=new File([g.blob],safe(it.name)+".jpg",{type:"image/jpeg"});
+  $("vwInfo").textContent=`${MB(g.blob.size)} MB${g.low?"・縮小版のみ（元の写真がありません）":""}${it.p.taken?"・撮影 "+fmtTaken(it.p.taken):""}`;$("vwSave").disabled=false}
+function closeViewer(){$("viewer").hidden=true;if(vw.url){URL.revokeObjectURL(vw.url);vw.url=null}$("vwImg").removeAttribute("src")}
+$("vwClose").onclick=closeViewer;$("vwPrev").onclick=()=>{if(vw.i>0){vw.i--;showVw()}};$("vwNext").onclick=()=>{if(vw.i<vw.list.length-1){vw.i++;showVw()}};
+$("vwSave").onclick=async()=>{const f=vw.file;if(!f)return;
+  if(TOUCH&&canShareFiles([f])){try{await navigator.share({files:[f]})}catch(e){if(e&&e.name!=="AbortError")toast("保存できませんでした："+e.message,4000)}return}
+  if(window.claude){closeViewer();await deliver([{name:f.name,blob:f}]);return}dlLink(f.name,f);toast(`${f.name} を保存しました`)};
 
 /* ===== PDF（各ページ1枚のJPEG） ===== */
 const unb64=s=>{const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u};
@@ -764,7 +902,7 @@ async function pagesLedger(){const D=(IOS?160:200)/25.4,W=420,H=297,mg=12,pw=Mat
     cx=mg;const bot=y+thH+rows.length*rowH;for(const [,,w] of cols){x.beginPath();x.moveTo(cx,y);x.lineTo(cx,bot);x.stroke();cx+=w}x.beginPath();x.moveTo(cx,y);x.lineTo(cx,bot);x.stroke();
     for(let i=0;i<rows.length;i++){const r=rows[i],ry=y+thH+i*rowH;cx=mg;
       for(const [k,,w] of cols){
-        if(k==="photo"){if(r.photos[0]){try{const im=await blobImage(r.photos[0].blob),bw=w-3,bh=rowH-3,s=Math.min(bw/im.naturalWidth,bh/im.naturalHeight),iw=im.naturalWidth*s,ih=im.naturalHeight*s;x.drawImage(im,cx+1.5+(bw-iw)/2,ry+1.5+(bh-ih)/2,iw,ih)}catch(e){}}}
+        if(k==="photo"){if(r.photos[0]){try{const im=await blobImage((await getPhoto(S,r.photos[0])).blob),bw=w-3,bh=rowH-3,s=Math.min(bw/im.naturalWidth,bh/im.naturalHeight),iw=im.naturalWidth*s,ih=im.naturalHeight*s;x.drawImage(im,cx+1.5+(bw-iw)/2,ry+1.5+(bh-ih)/2,iw,ih)}catch(e){}}}
         else if(k==="pos"){x.font=`700 3px ${FONT}`;x.fillStyle=!has(r.lat)?"#8f600c":r.src==="手動"?"#c63d2b":"#22744a";x.fillText((r.src||"位置なし")+(has(r.acc)&&r.src!=="手動"?` ±${Math.round(r.acc)}m`:""),cx+1.5,ry+5);x.fillStyle="#1c2220";x.font=`2.9px ${FM}`;
           const L=[];if(has(r.X))L.push(`X ${r.X.toFixed(1)}`,`Y ${r.Y.toFixed(1)}`);if(has(r.lat))L.push(`${r.lat.toFixed(6)}N`,`${r.lon.toFixed(6)}E`);if(r.out)L.push("※図面範囲外");L.forEach((t,j)=>x.fillText(t,cx+1.5,ry+9.5+j*4))}
         else if(k==="id"){x.font=`700 4.4px ${FONT}`;x.fillStyle=catColor(r.cat);wrapLines(x,recLabel(r),w-3,3).forEach((t,j)=>x.fillText(t,cx+1.5,ry+6.5+j*5.4))}
@@ -809,7 +947,7 @@ $("oPdf").onclick=async()=>{if(!S||(!S.recs.length&&!S.map))return toast("記録
     if($("oGsi").checked){try{const g=await pageGsi(isGsi()?curLayer():"std");if(g)pages.push(g);else warn="位置のある記録がないため、地理院地図のページは作りませんでした"}catch(e){warn="地理院地図のページを作れませんでした："+e.message}}
     if(S.recs.length)pages.push(...await pagesLedger());if(!pages.length){toast(warn||"出力する内容がありません");return}
     await saveFile(stem()+".pdf",buildPdf(pages,`${S.name||""} 調査地点位置図・台帳`));if(warn)setTimeout(()=>toast(warn,5000),3200)}
-  catch(e){console.error(e);toast("PDFを作成できませんでした："+e.message)}finally{b.disabled=false;b.textContent="PDF（位置図＋台帳）"}};
+  catch(e){console.error(e);outError("PDFを作成できませんでした："+e.message)}finally{b.disabled=false;b.textContent="PDF（位置図＋台帳）"}};
 
 /* ===== 起動 ===== */
 new ResizeObserver(()=>{resize();if(!S)return;if(isGsi()?!Vg.init:(S.map&&base&&Vp.s===1&&Vp.ox===0))fit()}).observe(cv);
@@ -821,11 +959,13 @@ window.addEventListener("orientationchange",()=>setTimeout(()=>{resize()},300));
           map:old.map?{kind:old.map.kind,name:old.map.name,mime:old.map.mime,page:old.map.page,blob:new Blob([old.map.bytes],{type:old.map.mime||"application/pdf"})}:null,
           recs:(old.recs||[]).map(r=>({...r,cat:"墓"}))});APP.sites.push(s);APP.cur=s.id;restored=true;toast("以前の「古墓台帳」のデータを引き継ぎました",4500)}}}
   catch(e){$("storeInfo").textContent="この画面では端末内に自動保存できません。作業ファイルをこまめに書き出してください"}
-  S=APP.sites.find(s=>s.id===APP.cur)||APP.sites[0]||null;APP.cur=S?S.id:null;
+  if(APP.burst===undefined)APP.burst=true;if(APP.photoMax===undefined)APP.photoMax=2400;
+  try{const n=await migratePhotos();if(n)console.log("photos moved",n);await cleanOrphans()}catch(e){}
+  S=APP.sites.find(s=>s.id===APP.cur)||APP.sites[0]||null;APP.cur=S?S.id:null;updateBurstUI();
   await openMap();if(restored&&S&&S.recs.length)toast(`前回の作業を復元しました（${S.name||""}・${S.recs.length}件）`);
   gpsChip();startGps();
   try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
   try{if("serviceWorker" in navigator&&location.protocol==="https:"&&!window.claude)navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}})();
-window.__app={get APP(){return APP},get S(){return S},GK,live,get V(){return V},llToUV,merc,unmerc,tileStat};
+window.__app={get APP(){return APP},get S(){return S},GK,live,get V(){return V},llToUV,merc,unmerc,tileStat,DB,phKey,getPhoto,setZipMax:v=>ZIP_MAX=v};
 </script>
 </body></html>
