@@ -1,7 +1,7 @@
-// 調査地点台帳 v1.2：オフライン用キャッシュ
+// 調査地点台帳 v1.3：オフライン用キャッシュ
 // ・アプリ本体：通信できるときは最新版を取得し、圏外では保存済みの版で起動
 // ・地理院タイル：一度表示した範囲を端末に一時保存（上限あり）
-const CACHE="chosa-chiten-v1.2",TILES="chosa-chiten-tiles",TILE_MAX=2000;
+const CACHE="chosa-chiten-v1.3",TILES="chosa-chiten-tiles",TILE_MAX=2000;
 const CORE=["./","index.html","manifest.webmanifest","icon-180.png","icon-512.png",
  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"];
